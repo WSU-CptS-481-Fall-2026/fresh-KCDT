@@ -81,6 +81,7 @@
   "action.close_terminal": "Close terminal",
   "action.command_palette": "Command palette",
   "action.copy": "Copy",
+  "action.copy_to_new_tab": "Copy Selection to New Tab",
   "action.copy_file_path": "Copy file path",
   "action.copy_relative_file_path": "Copy relative file path",
   "action.copy_with_formatting": "Copy with formatting",

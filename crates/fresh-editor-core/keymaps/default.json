@@ -396,6 +396,14 @@
       "when": "normal"
     },
     {
+      "comment": "Copy selected text to a new tab",
+      "key": "t",
+      "modifiers": ["ctrl"],
+      "action": "copy_to_new_tab",
+      "args": {},
+      "when": "normal"
+    },
+    {
       "key": "x",
       "modifiers": ["ctrl"],
       "action": "cut",

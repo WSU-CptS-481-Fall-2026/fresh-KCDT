@@ -139,6 +139,7 @@ Drop a selection anchor and extend the selection as you move, without holding `S
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl+C` | Copy |
+| `Ctrl+t` | copy selected text To new tab|
 | `Ctrl+X` | Cut |
 | `Ctrl+V` | Paste |
 | `Ctrl+Z` | Undo |

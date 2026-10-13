@@ -444,6 +444,7 @@ pub enum Action {
     // Clipboard
     Copy,
     CopyWithTheme(String),
+    CopyToNewTab,
     Cut,
     Paste,
     /// Copy the absolute filesystem path of the active buffer's file to the clipboard.
@@ -1033,6 +1034,7 @@ impl Action {
             "cancel_mark" => CancelMark,
             "clear_mark" => ClearMark,
 
+            "copy_to_new_tab" => CopyToNewTab,
             "copy" => Copy,
             "cut" => Cut,
             "paste" => Paste,
@@ -2955,6 +2957,7 @@ impl KeybindingResolver {
             Action::SetMark => t!("action.set_mark"),
             Action::CancelMark => t!("action.cancel_mark"),
             Action::ClearMark => t!("action.clear_mark"),
+            Action::CopyToNewTab => t!("action.copy_to_new_tab"),
             Action::Copy => t!("action.copy"),
             Action::CopyWithTheme(theme) if theme.is_empty() => t!("action.copy_with_formatting"),
             Action::CopyWithTheme(theme) => t!("action.copy_with_theme", theme = theme),

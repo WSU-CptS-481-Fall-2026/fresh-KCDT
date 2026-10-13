@@ -70,6 +70,104 @@ impl Editor {
         }
     }
 
+    fn handle_paste(&mut self) -> AnyhowResult<()> {
+        if self.active_window_mut().key_context
+            == crate::input::keybindings::KeyContext::FileExplorer
+        {
+            self.file_explorer_paste();
+            return Ok(());
+        }
+        // Focused widget Text wins over the buffer paste
+        // path, and bypasses `is_editing_disabled`. Line
+        // endings get normalised to LF before insertion
+        // (multi-line `TextEdit` stores plain `\n`;
+        // single-line strips them).
+        let buffer_id = self.active_buffer();
+        if let Some(panel_id) = self.focused_text_widget_panel_for_buffer(buffer_id) {
+            if let Some(text) = self.clipboard.paste() {
+                let normalized = text.replace("\r\n", "\n").replace('\r', "\n");
+                self.handle_widget_insert_str(&panel_id, &normalized);
+                self.set_status_message(t!("clipboard.pasted").to_string());
+            }
+            return Ok(());
+        }
+        if self.active_window().is_editing_disabled() {
+            self.set_status_message(t!("buffer.editing_disabled").to_string());
+            return Ok(());
+        }
+        Ok(self.paste())
+    }
+
+    fn handle_copy(&mut self) -> AnyhowResult<()> {
+        // Editor-level popups take precedence over everything, including the file explorer.
+        let popup = self
+            .global_popups
+            .top()
+            .or_else(|| self.active_state().popups.top());
+        if let Some(popup) = popup {
+            if popup.has_selection() {
+                if let Some(text) = popup.get_selected_text() {
+                    self.clipboard.copy(text);
+                    self.set_status_message(t!("clipboard.copied").to_string());
+                    return Ok(());
+                }
+            }
+        }
+        if self.active_window_mut().key_context
+            == crate::input::keybindings::KeyContext::FileExplorer
+        {
+            self.active_window_mut().file_explorer_copy();
+            return Ok(());
+        }
+        // A focused widget Text input on the active buffer
+        // wins over the underlying buffer's copy path. The
+        // widget's selection lives in its TextEdit; this
+        // bypasses `is_editing_disabled` because widget
+        // inputs are independent of the underlying virtual
+        // buffer's read-only-ness.
+        let buffer_id = self.active_buffer();
+        if let Some(panel_id) = self.focused_text_widget_panel_for_buffer(buffer_id) {
+            if self.handle_widget_copy(&panel_id) {
+                self.set_status_message(t!("clipboard.copied").to_string());
+                return Ok(());
+            }
+        }
+        // Check if active buffer is a composite buffer
+        if self.active_window().is_composite_buffer(buffer_id) {
+            if let Some(_handled) = self.handle_composite_action(buffer_id, &Action::Copy) {
+                return Ok(());
+            }
+        }
+        // Copying the selection completes a drag-to-select gesture on
+        // a live terminal grid: the split was only parked in implicit
+        // (drag-initiated) scrollback so the selection could exist,
+        // and the copy is the gesture's natural end — resume the live
+        // grid. Explicit scrollback visits (Ctrl+Space, Shift+PageUp,
+        // wheel) are never resumed by a copy: the user chose a stable
+        // reading view and yanking it to the bottom would lose their
+        // place.
+        let resume_terminal = {
+            let win = self.active_window();
+            let split = win.effective_active_split();
+            win.split_terminal_drag_scrollback(split, buffer_id)
+                && win
+                    .buffers
+                    .splits()
+                    .and_then(|(_, vs)| vs.get(&split))
+                    .is_some_and(|vs| {
+                        vs.cursors.iter().any(|(_, c)| {
+                            c.selection_range().is_some() || c.has_block_selection()
+                        })
+                    })
+        };
+        self.copy_selection();
+        if resume_terminal {
+            self.enter_terminal_mode();
+            self.set_status_message("Copied - terminal resumed".to_string());
+        }
+        Ok(())
+    }
+
     /// Handle an action (for normal mode and command execution).
     /// Used by the app module internally and by the GUI module for native menu dispatch.
     pub(crate) fn handle_action(&mut self, action: Action) -> AnyhowResult<()> {
@@ -126,6 +224,13 @@ impl Editor {
             Action::Quit => self.quit(),
             Action::ForceQuit => {
                 self.should_quit = true;
+            }
+            Action::CopyToNewTab => {
+                self.handle_copy()?;
+                if let Some(text) = self.clipboard.paste_internal() {
+                    self.new_buffer();
+                    self.paste_text(text);
+                }
             }
             Action::Detach => {
                 self.should_detach = true;
@@ -384,72 +489,7 @@ impl Editor {
                 }
             }
             Action::Copy => {
-                // Editor-level popups take precedence over everything, including the file explorer.
-                let popup = self
-                    .global_popups
-                    .top()
-                    .or_else(|| self.active_state().popups.top());
-                if let Some(popup) = popup {
-                    if popup.has_selection() {
-                        if let Some(text) = popup.get_selected_text() {
-                            self.clipboard.copy(text);
-                            self.set_status_message(t!("clipboard.copied").to_string());
-                            return Ok(());
-                        }
-                    }
-                }
-                if self.active_window_mut().key_context
-                    == crate::input::keybindings::KeyContext::FileExplorer
-                {
-                    self.active_window_mut().file_explorer_copy();
-                    return Ok(());
-                }
-                // A focused widget Text input on the active buffer
-                // wins over the underlying buffer's copy path. The
-                // widget's selection lives in its TextEdit; this
-                // bypasses `is_editing_disabled` because widget
-                // inputs are independent of the underlying virtual
-                // buffer's read-only-ness.
-                let buffer_id = self.active_buffer();
-                if let Some(panel_id) = self.focused_text_widget_panel_for_buffer(buffer_id) {
-                    if self.handle_widget_copy(&panel_id) {
-                        self.set_status_message(t!("clipboard.copied").to_string());
-                        return Ok(());
-                    }
-                }
-                // Check if active buffer is a composite buffer
-                if self.active_window().is_composite_buffer(buffer_id) {
-                    if let Some(_handled) = self.handle_composite_action(buffer_id, &Action::Copy) {
-                        return Ok(());
-                    }
-                }
-                // Copying the selection completes a drag-to-select gesture on
-                // a live terminal grid: the split was only parked in implicit
-                // (drag-initiated) scrollback so the selection could exist,
-                // and the copy is the gesture's natural end — resume the live
-                // grid. Explicit scrollback visits (Ctrl+Space, Shift+PageUp,
-                // wheel) are never resumed by a copy: the user chose a stable
-                // reading view and yanking it to the bottom would lose their
-                // place.
-                let resume_terminal = {
-                    let win = self.active_window();
-                    let split = win.effective_active_split();
-                    win.split_terminal_drag_scrollback(split, buffer_id)
-                        && win
-                            .buffers
-                            .splits()
-                            .and_then(|(_, vs)| vs.get(&split))
-                            .is_some_and(|vs| {
-                                vs.cursors.iter().any(|(_, c)| {
-                                    c.selection_range().is_some() || c.has_block_selection()
-                                })
-                            })
-                };
-                self.copy_selection();
-                if resume_terminal {
-                    self.enter_terminal_mode();
-                    self.set_status_message("Copied - terminal resumed".to_string());
-                }
+                self.handle_copy()?;
             }
             Action::CopyWithTheme(theme) => self.copy_selection_with_theme(&theme),
             Action::CopyFilePath => self.copy_active_buffer_path(false),
@@ -477,31 +517,7 @@ impl Editor {
                 self.cut_selection()
             }
             Action::Paste => {
-                if self.active_window_mut().key_context
-                    == crate::input::keybindings::KeyContext::FileExplorer
-                {
-                    self.file_explorer_paste();
-                    return Ok(());
-                }
-                // Focused widget Text wins over the buffer paste
-                // path, and bypasses `is_editing_disabled`. Line
-                // endings get normalised to LF before insertion
-                // (multi-line `TextEdit` stores plain `\n`;
-                // single-line strips them).
-                let buffer_id = self.active_buffer();
-                if let Some(panel_id) = self.focused_text_widget_panel_for_buffer(buffer_id) {
-                    if let Some(text) = self.clipboard.paste() {
-                        let normalized = text.replace("\r\n", "\n").replace('\r', "\n");
-                        self.handle_widget_insert_str(&panel_id, &normalized);
-                        self.set_status_message(t!("clipboard.pasted").to_string());
-                    }
-                    return Ok(());
-                }
-                if self.active_window().is_editing_disabled() {
-                    self.set_status_message(t!("buffer.editing_disabled").to_string());
-                    return Ok(());
-                }
-                self.paste()
+                self.handle_paste()?;
             }
             Action::SelectAll => {
                 // Focused widget Text wins over the buffer's
@@ -2217,6 +2233,94 @@ impl Editor {
         };
         if handled {
             self.process_deferred_actions(ctx);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use super::*;
+    use crate::config::Config;
+    use crate::config_io::DirectoryContext;
+    use crate::model::filesystem::StdFileSystem;
+    use crate::view::color_support::ColorCapability;
+    use std::sync::Arc;
+
+    fn test_editor() -> (Editor, tempfile::TempDir) {
+        let temp = tempfile::tempdir().unwrap();
+        let editor = Editor::for_test(
+            Config::default(), 80, 24,
+            Some(temp.path().to_path_buf()),
+            DirectoryContext::for_testing(temp.path()),
+            ColorCapability::TrueColor,
+            Arc::new(StdFileSystem),
+            None, None, false, false, false,
+        ).unwrap();
+        (editor, temp)
+    }
+    #[test]
+    fn handle_copy_test() {
+        let cases = [
+            ("partial selection", "hello world", Some(0), 5, "hello"),
+            ("whole buffer", "hello", Some(0), 5, "hello"),
+            ("backward selection", "hello", Some(5), 0, "hello"),
+            ("multiline selection", "one\ntwo", Some(0), 7, "one\ntwo"),
+            ("unicode selection", "café", Some(0), 5, "café"),
+            ("no selection", "hello", None, 2, "hello"),
+            ("empty buffer", "", None, 0, "old clipboard"),
+        ];
+
+        for (name, source, anchor, position, expected) in cases {
+            let (mut editor, _temp) = test_editor();
+            editor.new_buffer();
+            editor.set_clipboard_for_test("old clipboard".into());
+            editor.active_state_mut().buffer.insert(0, source);
+
+            let cursor = editor.active_cursors_mut().primary_mut();
+            cursor.anchor = anchor;
+            cursor.position = position;
+
+            editor.handle_copy().unwrap();
+
+            assert_eq!(editor.clipboard_content_for_test(), expected, "{name}");
+            let actual = editor.active_state_mut().get_text_range(0, source.len());
+            assert_eq!(actual, source, "{name}: source must remain unchanged");
+        }
+    }
+
+    #[test]
+    fn handle_paste_test() {
+        // name, source, anchor, cursor position, clipboard, expected buffer
+        let cases = [
+            ("empty buffer", "", None, 0, "hello", "hello"),
+            ("insert at start", "world", None, 0, "hello ", "hello world"),
+            ("insert at end", "hello", None, 5, " world", "hello world"),
+            ("insert in middle", "ac", None, 1, "b", "abc"),
+            ("replace selection", "hello world", Some(6), 11, "Rust", "hello Rust"),
+            ("backward selection", "hello world", Some(11), 6, "Rust", "hello Rust"),
+            ("empty clipboard", "hello", None, 5, "", "hello"),
+            ("empty paste with selection", "hello", Some(0), 5, "", "hello"),
+            ("normalize newlines", "", None, 0, "a\r\nb\rc", "a\nb\nc"),
+            ("unicode paste", "Hi ", None, 3, "café", "Hi café"),
+        ];
+
+        for (name, source, anchor, position, clipboard, expected) in cases {
+            let (mut editor, _temp) = test_editor();
+            editor.new_buffer();
+            editor.active_state_mut().buffer.insert(0, source);
+            editor.set_clipboard_for_test(clipboard.into());
+
+            let cursor = editor.active_cursors_mut().primary_mut();
+            cursor.anchor = anchor;
+            cursor.position = position;
+
+            editor.handle_paste().unwrap();
+
+            let len = editor.active_state().buffer.len();
+            let actual = editor.active_state_mut().get_text_range(0, len);
+            assert_eq!(actual, expected, "{name}");
         }
     }
 }

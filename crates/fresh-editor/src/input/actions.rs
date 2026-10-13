@@ -3702,6 +3702,7 @@ pub fn action_to_events(
         | Action::ToggleMacroRecording(_)
         | Action::ShowMacro(_)
         | Action::ListMacros
+        | Action:: CopyToNewTab
         | Action::PromptRecordMacro
         | Action::PromptPlayMacro
         | Action::PlayLastMacro
