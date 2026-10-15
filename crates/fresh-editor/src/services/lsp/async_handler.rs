@@ -730,6 +730,10 @@ fn extract_capability_summary(caps: &ServerCapabilities) -> ServerCapabilitySumm
             lsp_types::OneOf::Left(v) => *v,
             lsp_types::OneOf::Right(_) => true,
         }),
+        rename_prepare: bool_or_options(&caps.rename_provider, |p| match p {
+            lsp_types::OneOf::Left(_) => false,
+            lsp_types::OneOf::Right(options) => options.prepare_provider.unwrap_or(false),
+        }),
         signature_help: caps.signature_help_provider.is_some(),
         inlay_hints: bool_or_options(&caps.inlay_hint_provider, |p| match p {
             lsp_types::OneOf::Left(v) => *v,
@@ -5606,6 +5610,25 @@ impl Drop for LspHandle {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn test_rename_capabilities() {
+        let caps = serde_json::from_value(serde_json::json!({
+            "renameProvider": true
+        }))
+        .unwrap();
+        let result = super::extract_capability_summary(&caps);
+        assert!(result.rename);
+        assert!(!result.rename_prepare);
+
+        let caps = serde_json::from_value(serde_json::json!({
+            "renameProvider": {"prepareProvider": true}
+        }))
+        .unwrap();
+        let result = super::extract_capability_summary(&caps);
+        assert!(result.rename);
+        assert!(result.rename_prepare);
+    }
+
     use super::{StreakTransition, TimeoutStreak, UNRESPONSIVE_TIMEOUT_STREAK};
 
     /// Issue #2197: one expiry is not enough to call a server unresponsive —

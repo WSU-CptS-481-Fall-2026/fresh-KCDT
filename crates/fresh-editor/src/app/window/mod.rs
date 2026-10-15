@@ -1648,10 +1648,6 @@ impl Window {
         false
     }
 
-    /// True iff at least one LSP server attached to the active buffer's
-    /// language advertises `textDocument/rename` (and therefore the
-    /// `prepareRename` request, which the editor surfaces only through
-    /// the rename feature flag).
     pub(crate) fn server_supports_prepare_rename(&self) -> bool {
         let Some(language) = self
             .buffers
@@ -1660,13 +1656,8 @@ impl Window {
         else {
             return false;
         };
-        {
-            let lsp = &self.lsp;
-            for sh in lsp.get_handles(&language) {
-                if sh.capabilities.rename {
-                    return true;
-                }
-            }
+        if let Some(server) = self.lsp.handle_for_feature(&language, LspFeature::Rename) {
+            return server.capabilities.rename_prepare;
         }
         false
     }
