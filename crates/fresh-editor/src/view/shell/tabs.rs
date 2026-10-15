@@ -257,7 +257,10 @@ fn name_node(pane: LeafId, t: TabTarget, s: String, ink: String) -> Node<UiMsg> 
                             y,
                         }))
                     }
-                    _ => None,
+                    MouseButton::Middle => {
+                        e.stop();
+                        Some(UiMsg::Ui(UiFact::PaneTabClose { pane, target: t }))
+                    }
                 }
             }),
         )
@@ -795,6 +798,24 @@ mod tests {
                 pane: pane(),
                 x: (plus.x + 1) as u16,
                 y: plus.y as u16
+            }]
+        );
+    }
+
+    #[test]
+    fn test_middle_click_close() {
+        let mut ui = laid_out(strip_of(2, 0), PaneControls::default(), 80);
+        let tab = rect(&ui, tab_key(pane(), buf(1)));
+        let result = facts(ui.dispatch(Input::press(
+            Point::new(tab.x + 2, tab.y),
+            MouseButton::Middle,
+            Mods::NONE,
+        )));
+        assert_eq!(
+            result,
+            vec![UiFact::PaneTabClose {
+                pane: pane(),
+                target: buf(1)
             }]
         );
     }
