@@ -1268,6 +1268,74 @@ const weatherRefresh: SectionRefresh = async (ctx) => {
     if (tomorrow) ctx.kv("tomorrow", tomorrow, "value");
 };
 
+const jokeRefresh: SectionRefresh = async (ctx) => {
+    let stdout: string;
+    let ok: boolean;
+    try {
+        // Query icanhazdadjoke with Accept: application/json
+        const res = await run(
+            "curl",
+            [
+                "-fsS",
+                "--max-time",
+                "5",
+                "-H",
+                "Accept: application/json",
+                "-H",
+                "User-Agent: fresh-dashboard-plugin",
+                "https://icanhazdadjoke.com/",
+            ],
+            "",
+            6000,
+        );
+        stdout = res.stdout;
+        ok = res.ok;
+    } catch {
+        ctx.error("fetch failed");
+        return;
+    }
+
+    if (!ok || !stdout.trim()) {
+        ctx.error("offline");
+        return;
+    }
+
+    let joke = "";
+    try {
+        const parsed = JSON.parse(stdout) as { joke?: string };
+        joke = (parsed.joke ?? "").trim();
+    } catch {
+        ctx.error("malformed response");
+        return;
+    }
+
+    if (!joke) {
+        ctx.error("no joke found");
+        return;
+    }
+
+    // Wrap lines to fit neatly inside the dashboard frame
+    const maxWidth = Math.max(10, ctx.width - 6);
+    const words = joke.split(/\s+/);
+    let currentLine = "";
+
+    for (const word of words) {
+        if ((currentLine + " " + word).trim().length > maxWidth) {
+            ctx.text("    " + currentLine, { color: "value" });
+            ctx.newline();
+            currentLine = word;
+        } else {
+            currentLine = (currentLine + " " + word).trim();
+        }
+    }
+    if (currentLine) {
+        ctx.text("    " + currentLine, { color: "value" });
+        ctx.newline();
+    }
+};
+
+
+
 function normalizeRepoUrl(raw: string): string | null {
     const s = trim(raw);
     if (!s) return null;
@@ -2069,7 +2137,7 @@ registerHandler(
 // the init.ts starter template for a ready-to-paste example.
 registerSection("git", gitRefresh, { ttlMs: 15_000, timeoutMs: 6_000 });
 registerSection("disk", diskRefresh, { ttlMs: 60_000, timeoutMs: 5_000 });
-
+registerSection("joke", jokeRefresh, { ttlMs: 60_000, timeoutMs: 6_000 });
 // Expose the section-management entry points to other plugins and to
 // user init.ts. `registerSection(name, refresh)` adds a section and
 // returns an unregister callback; `removeSection(name)` tears sections
@@ -2106,6 +2174,7 @@ editor.exportPluginApi("dashboard", {
     builtinHandlers: {
         weather: weatherRefresh,
         github: githubRefresh,
+        joke: jokeRefresh,
     },
 });
 
