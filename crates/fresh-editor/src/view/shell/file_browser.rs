@@ -125,6 +125,10 @@ pub fn list_key() -> Key {
     Key::Str("file_browser_list".into())
 }
 
+pub fn cancel_key() -> Key {
+    Key::Str("file_browser_cancel".into())
+}
+
 pub fn row_key(index: usize) -> Key {
     Key::Pair("file_browser_row".into(), index as u64)
 }
@@ -214,34 +218,39 @@ fn absorb(n: Node<UiMsg>) -> Node<UiMsg> {
 /// fit. `Block::title` with the highlighted `[...]` the painter built by hand
 /// — measured against the width the tree gives the strip, which is what
 /// `layout_reader` is for.
-fn title_strip(dir: &Path) -> Node<UiMsg> {
+fn title_strip(b: &Browser) -> Node<UiMsg> {
     let ring = pair("ui.popup_border_fg", "ui.popup_bg");
     let mark = pair("ui.menu_highlight_fg", "ui.popup_bg");
-    let dir = dir.to_path_buf();
+    let dir = b.dir.clone();
     let clear = |n: Node<UiMsg>| n.pointer_mode(PointerMode::Transparent);
-    clear(row().h(Sizing::Cells(1)).children([
-        // `Block::title` starts one cell in from the corner.
-        clear(row().w(Sizing::Cells(1))),
-        clear(layout_reader(move |info: LayoutInfo| {
-            // The painter's `width - 4`: the two corners and a cell of air on
-            // either side of the text. The strip is already one cell in.
-            let max = (info.constraints.max_w as usize).saturating_sub(3);
-            let p = truncate_path(&dir, max);
-            let runs = if p.truncated {
-                vec![
-                    Run::themed(" ", &ring),
-                    Run::themed(&p.prefix, &ring),
-                    Run::themed(format!("{}[...]", p.sep), &mark),
-                    Run::themed(&p.suffix, &ring),
-                    Run::themed(" ", &ring),
-                ]
-            } else {
-                vec![Run::themed(format!(" {} ", p.to_string_plain()), &ring)]
-            };
-            text_runs(runs).theme(ring.clone())
-        })),
-        clear(row().flex(1)),
-    ]))
+    clear(
+        row().h(Sizing::Cells(1)).children([
+            // `Block::title` starts one cell in from the corner.
+            clear(row().w(Sizing::Cells(1))),
+            clear(
+                layout_reader(move |info: LayoutInfo| {
+                    // The flexible caption gets the space left beside Cancel.
+                    let max = (info.constraints.max_w as usize).saturating_sub(2);
+                    let p = truncate_path(&dir, max);
+                    let runs = if p.truncated {
+                        vec![
+                            Run::themed(" ", &ring),
+                            Run::themed(&p.prefix, &ring),
+                            Run::themed(format!("{}[...]", p.sep), &mark),
+                            Run::themed(&p.suffix, &ring),
+                            Run::themed(" ", &ring),
+                        ]
+                    } else {
+                        vec![Run::themed(format!(" {} ", p.to_string_plain()), &ring)]
+                    };
+                    text_runs(runs).theme(ring.clone())
+                })
+                .flex(1),
+            ),
+            cancel_button(),
+            clear(row().w(Sizing::Cells(1))),
+        ]),
+    )
 }
 
 fn press(fact: UiFact) -> fresh_ui::Handler<UiMsg> {
