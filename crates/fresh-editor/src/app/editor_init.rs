@@ -1107,7 +1107,7 @@ impl Editor {
         // hand it off when the window is constructed below.
         let mut buffer_metadata: HashMap<BufferId, BufferMetadata> = HashMap::new();
         let mut seed_metadata = BufferMetadata::new();
-        if orchestrator_mode {
+        if orchestrator_mode || !config.editor.create_buffer_on_startup{
             // The editor always needs at least one buffer, but in
             // Orchestrator mode nobody asked for an untitled one: a bare
             // `fresh` is "show me my workspaces", and a `[No Name]` tab in

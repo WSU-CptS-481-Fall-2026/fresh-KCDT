@@ -1811,6 +1811,12 @@ pub struct EditorConfig {
     #[schemars(extend("x-section" = "Startup"))]
     pub auto_create_empty_buffer_on_last_buffer_close: bool,
 
+    /// Whether to create a blank `[No Name]` buffer when launching the editor without opening a file.
+    /// Default: False
+    #[serde(default = "default_false")]
+    #[schemars(extend("x-section" = "Startup"))]
+    pub create_buffer_on_startup: bool,
+
     // ===== Recovery =====
     /// Whether to enable file recovery (Emacs-style auto-save)
     /// When enabled, buffers are periodically saved to recovery files
@@ -1915,6 +1921,11 @@ pub struct EditorConfig {
     #[serde(default = "default_file_tree_poll_interval")]
     #[schemars(extend("x-section" = "Performance"))]
     pub file_tree_poll_interval_ms: u64,
+
+}
+
+fn default_create_buffer_on_startup() -> bool {
+    false 
 }
 
 fn default_tab_size() -> usize {
@@ -2118,6 +2129,7 @@ impl Default for EditorConfig {
             whitespace_newlines: false,
             whitespace_carriage_returns: false,
             whitespace_in_selection: true,
+            create_buffer_on_startup: false,
         }
     }
 }

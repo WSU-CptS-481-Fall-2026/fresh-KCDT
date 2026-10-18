@@ -96,6 +96,7 @@ pub struct PartialConfig {
     pub warnings: Option<PartialWarningsConfig>,
     pub plugins: Option<HashMap<String, PartialPluginConfig>>,
     pub packages: Option<PartialPackagesConfig>,
+    pub create_buffer_on_startup: Option<bool>,
     /// Environment detectors — overridden wholesale (the whole detector list
     /// is replaced if provided), not merged per-detector.
     pub env: Option<crate::config::EnvConfig>,
@@ -242,6 +243,7 @@ pub struct PartialEditorConfig {
     pub whitespace_newlines: Option<bool>,
     pub whitespace_carriage_returns: Option<bool>,
     pub whitespace_in_selection: Option<bool>,
+    pub create_buffer_on_startup: Option<bool>,
 }
 
 impl Merge for PartialEditorConfig {
@@ -294,6 +296,8 @@ impl Merge for PartialEditorConfig {
             .merge_from(&other.ephemeral_file_patterns);
         self.auto_create_empty_buffer_on_last_buffer_close
             .merge_from(&other.auto_create_empty_buffer_on_last_buffer_close);
+        self.create_buffer_on_startup
+            .merge_from(&other.create_buffer_on_startup);
         self.highlight_context_bytes
             .merge_from(&other.highlight_context_bytes);
         self.mouse_wheel_scroll_lines
@@ -384,6 +388,7 @@ impl Merge for PartialEditorConfig {
             .merge_from(&other.whitespace_carriage_returns);
         self.whitespace_in_selection
             .merge_from(&other.whitespace_in_selection);
+        
     }
 }
 
@@ -735,6 +740,7 @@ impl From<&crate::config::EditorConfig> for PartialEditorConfig {
             whitespace_newlines: Some(cfg.whitespace_newlines),
             whitespace_carriage_returns: Some(cfg.whitespace_carriage_returns),
             whitespace_in_selection: Some(cfg.whitespace_in_selection),
+            create_buffer_on_startup: Some(cfg.create_buffer_on_startup)
         }
     }
 }
@@ -944,6 +950,9 @@ impl PartialEditorConfig {
             whitespace_in_selection: self
                 .whitespace_in_selection
                 .unwrap_or(defaults.whitespace_in_selection),
+            create_buffer_on_startup: self
+                .create_buffer_on_startup              
+                .unwrap_or(defaults.create_buffer_on_startup),
         }
     }
 }
@@ -1207,6 +1216,7 @@ impl From<&crate::config::Config> for PartialConfig {
             keybindings: Some(cfg.keybindings.clone()),
             keybinding_maps: Some(cfg.keybinding_maps.clone()),
             active_keybinding_map: Some(cfg.active_keybinding_map.clone()),
+            create_buffer_on_startup: Some(cfg.editor.create_buffer_on_startup),
             languages: Some(
                 cfg.languages
                     .iter()
