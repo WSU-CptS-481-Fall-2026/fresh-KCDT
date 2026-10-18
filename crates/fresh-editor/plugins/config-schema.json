@@ -140,6 +140,7 @@
           "**/.git/**"
         ],
         "auto_create_empty_buffer_on_last_buffer_close": true,
+        "create_buffer_on_startup": false,
         "recovery_enabled": true,
         "auto_recovery_save_interval_secs": 2,
         "auto_revert_poll_interval_ms": 2000,
@@ -912,6 +913,12 @@
           "description": "Whether to auto-create a fresh empty `[No Name]` buffer when the\nlast open buffer is closed. When `false`, the editor still creates\nan internal placeholder buffer (it always needs at least one) but\nhides it from the tab bar so the workspace looks blank. Combined\nwith `file_explorer.auto_open_on_last_buffer_close = false`, this\ngives a fully blank workspace where nothing opens automatically.\nDefault: true",
           "type": "boolean",
           "default": true,
+          "x-section": "Startup"
+        },
+        "create_buffer_on_startup": {
+          "description": "Whether to create a blank `[No Name]` buffer when launching the editor without opening a file.\nDefault: false",
+          "type": "boolean",
+          "default": false,
           "x-section": "Startup"
         },
         "recovery_enabled": {
