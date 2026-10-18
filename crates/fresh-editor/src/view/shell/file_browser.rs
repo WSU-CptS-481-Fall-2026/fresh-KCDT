@@ -39,6 +39,7 @@ use fresh_ui::{
 use crate::app::file_open::{BrowserPart, SortMode, Toggle};
 use crate::app::shell_host::shell_theme::{attrs, pair};
 use crate::app::types::HoverTarget;
+use crate::input::keybindings::Action;
 use crate::view::ui::status_bar::truncate_path;
 
 use super::frame::{region_key, HostRegion};
@@ -185,7 +186,7 @@ fn dialog(b: &Browser) -> Node<UiMsg> {
                         .children([navigation(b), header(b), listing(b)])
                         .flex(1),
                 ),
-                title_strip(&b.dir),
+                title_strip(b),
             ]),
     )
 }
@@ -251,6 +252,22 @@ fn title_strip(b: &Browser) -> Node<UiMsg> {
             clear(row().w(Sizing::Cells(1))),
         ]),
     )
+}
+
+fn cancel_button() -> Node<UiMsg> {
+    let ink = pair("ui.help_key_fg", "ui.popup_bg");
+    gesture(text(format!("[ {} ]", t!("confirm.cancel"))).theme(ink))
+        .key(cancel_key())
+        .on(
+            GestureKind::Press,
+            Rc::new(|e: &Event| {
+                if e.button != MouseButton::Left {
+                    return None;
+                }
+                e.stop();
+                Some(UiMsg::Action(Action::PromptCancel))
+            }),
+        )
 }
 
 fn press(fact: UiFact) -> fresh_ui::Handler<UiMsg> {
