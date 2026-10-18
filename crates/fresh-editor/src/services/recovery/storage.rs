@@ -202,7 +202,24 @@ impl RecoveryStorage {
     /// Check if there was a crash (lock file exists but process not running)
     pub fn detect_crash(&self) -> io::Result<bool> {
         match self.read_session_lock()? {
-            Some(info) => Ok(!info.is_running()),
+            Some(info) => {
+                // If the PID is explicitly dead, it's a crash
+                if !info.is_running() {
+                    return Ok(true);
+                }
+
+                // Convert the u64 timestamp back into a SystemTime object
+                // (Using from_millis as that is the standard time format for fresh-editor workspaces)
+                let heartbeat_time = std::time::UNIX_EPOCH + std::time::Duration::from_millis(info.started_at);
+
+                if let Ok(duration) = std::time::SystemTime::now().duration_since(heartbeat_time) {
+                    if duration.as_secs() > 180 {
+                        return Ok(true);
+                    }
+                }
+
+                Ok(false)
+            },
             None => Ok(false),
         }
     }
@@ -2154,5 +2171,32 @@ mod tests {
             storage.recovery_dir,
             base_dir.join("sessions").join("test-session")
         );
+    }
+    use std::time::{SystemTime, Duration, UNIX_EPOCH};
+    use std::fs;
+    #[test]
+    fn test_detect_crash_stale_heartbeat() {
+        // This creates a temporary directory for the test lock file
+        let temp_dir = std::env::temp_dir().join("fresh_recovery_test");
+        fs::create_dir_all(&temp_dir).unwrap();
+        
+        // Creates a fake timestamp from 10 minutes ago (600 seconds)
+        let stale_time = SystemTime::now() - Duration::from_secs(600);
+        let stale_millis = stale_time.duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
+
+        // Writes a fake session.lock file with the stale time and a dummy PID
+        let lock_path = temp_dir.join("session.lock");
+        let fake_lock_data = format!(r#"{{"pid": 999999, "started_at": {}, "working_dir": "/"}}"#, stale_millis);
+        fs::write(&lock_path, fake_lock_data).unwrap();
+
+        let storage = RecoveryStorage {
+            recovery_dir: temp_dir.clone(),
+        };
+
+        // Assert that the stale timestamp triggers the crash detection
+        assert_eq!(storage.detect_crash().unwrap(), true);
+
+        // Cleanup
+        fs::remove_dir_all(temp_dir).unwrap();
     }
 }

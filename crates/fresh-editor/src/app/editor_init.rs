@@ -1414,6 +1414,21 @@ impl Editor {
             )))
         };
 
+        let heartbeat_service = std::sync::Arc::clone(&recovery_service);
+            std::thread::Builder::new()
+                .name("recovery-heartbeat".to_string())
+                .spawn(move || {
+                    loop {
+                        // Sleep for 60 seconds between heartbeats
+                        std::thread::sleep(std::time::Duration::from_secs(60));
+                        
+                        // Fire the heartbeat unconditionally
+                        if let Ok(service) = heartbeat_service.lock() {
+                            let _ = service.heartbeat();
+                        }
+                    }
+                })
+                .ok();
         // The single source of truth for terminal mouse capture, shared by
         // every window (mouse capture is one global terminal property, not a
         // per-window setting). Defaults to enabled, matching the always-on
