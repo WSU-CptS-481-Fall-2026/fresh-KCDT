@@ -173,6 +173,30 @@ pub fn collect_regex_matches(
         .collect()
 }
 
+/// Find every literal match of in `search` in `haystack`
+/// follows `case_sensitive`
+pub fn collect_literal_matches(
+    search: &str,
+    haystack: &[u8],
+    replacement: &str,
+    case_sensitive: bool,
+) -> Vec<ReplaceMatch> {
+    let Ok(re) = regex::bytes::RegexBuilder::new(&regex::escape(search))
+        .case_insensitive(!case_sensitive)
+        .build()
+    else {
+        return Vec::new();
+    };
+
+    re.find_iter(haystack)
+        .map(|m| ReplaceMatch {
+            offset: m.start(),
+            len: m.len(),
+            replacement: replacement.to_string(),
+        })
+        .collect()
+}
+
 /// Expand capture-group references in `replacement_template` against a single
 /// match. Returns the template unchanged when no captures are found.
 pub fn expand_replacement(
@@ -194,6 +218,24 @@ pub fn expand_replacement(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn literal_matches_case_insensitive() {
+        // Case-sensitivity off should should find all literal matches
+        let re = collect_literal_matches("foo", b"foo Foo FOO", "x", false);
+        assert_eq!(re.len(), 3);
+        assert_eq!(re[0].offset, 0);
+        assert_eq!(re[1].offset, 4);
+        assert_eq!(re[2].offset, 8);
+    }
+
+    #[test]
+    fn literal_matches_case_sensitive() {
+        // Case-sensitivity on should should only find literal matches
+        let re = collect_literal_matches("foo", b"foo Foo FOO", "x", true);
+        assert_eq!(re.len(), 1);
+        assert_eq!(re[0].offset, 0);
+    }
 
     #[test]
     fn build_regex_returns_none_when_disabled() {

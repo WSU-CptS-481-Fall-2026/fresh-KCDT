@@ -881,6 +881,9 @@ impl Editor {
     /// OPTIMIZATION: Uses BulkEdit for O(n) tree operations instead of O(n²)
     /// This directly edits the piece tree without loading the entire buffer into memory
     pub(super) fn perform_replace(&mut self, search: &str, replacement: &str) {
+        // temp debug start
+        self.set_status_message("DEBUG: perform_replace ran".to_string());
+        // temp debug end
         if search.is_empty() {
             self.set_status_message(t!("replace.empty_query").to_string());
             return;
@@ -911,17 +914,23 @@ impl Editor {
                 .collect()
         } else {
             // Plain text mode - replacement is used literally.
-            // One streaming pass over the buffer: asking for the next match
-            // from scratch per occurrence re-reads a chunk each time, which
-            // dominated the whole replace on files with many matches.
-            let state = self.active_state();
-            let buffer_len = state.buffer.len();
-            state
-                .buffer
-                .find_all_in_range(search, 0..buffer_len, usize::MAX)
-                .into_iter()
-                .map(|offset| (offset, search.len(), replacement.to_string()))
-                .collect()
+            // But matching respects Case Sensitive value.
+            let state = self.active_state_mut();
+            let total_bytes = state.buffer.len();
+
+            let Ok(bytes) = state.buffer.get_text_range_mut(0, total_bytes) else {
+                return;
+            };
+
+            super::regex_replace::collect_literal_matches(
+                search,
+                &bytes,
+                replacement,
+                self.active_window().search_case_sensitive,
+            )
+            .into_iter()
+            .map(|m| (m.offset, m.len, m.replacement))
+            .collect()
         };
 
         let count = matches.len();
@@ -984,6 +993,10 @@ impl Editor {
 
     /// Start interactive replace mode (query-replace)
     pub(super) fn start_interactive_replace(&mut self, search: &str, replacement: &str) {
+        // temp debug start
+        self.set_status_message("DEBUG: interactive replace ran".to_string());
+        // temp debug end
+
         if search.is_empty() {
             self.set_status_message(t!("replace.query_empty").to_string());
             return;
