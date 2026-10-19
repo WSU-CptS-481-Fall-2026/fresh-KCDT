@@ -42,13 +42,13 @@ const editor = getEditor();
 // ═════════════════════════════════════════════════════════════════════
 
 type Span = {
-    start: number;
-    end: number;
-    fg?: string;
-    bg?: string;
-    bold?: boolean;
-    underline?: boolean;
-    url?: string;
+  start: number;
+  end: number;
+  fg?: string;
+  bg?: string;
+  bold?: boolean;
+  underline?: boolean;
+  url?: string;
 };
 // Click action attached to whole rows — dispatched by the mouse_click
 // handler, which looks up the clicked buffer row in Draw.rowActions.
@@ -58,24 +58,28 @@ type Span = {
 // actionable. The `callback` variant lets third-party sections wire
 // up arbitrary click handlers via the public `DashboardContext` API.
 type ClickAction =
-    | { kind: "open-url"; url: string }
-    | { kind: "callback"; fn: () => void };
+  | { kind: "open-url"; url: string }
+  | { kind: "callback"; fn: () => void };
 type Draw = {
-    text: string;
-    spans: Span[];
-    // currentRow / currentCol are maintained by `emit()` + `newline()` so
-    // click-action ranges land on the same cells the underlined text
-    // actually occupies. A click at (buffer_row, buffer_col) only fires
-    // if it falls inside one of the row's registered ranges — padding
-    // spaces, kv labels, and the frame border inside an inner row are
-    // not clickable, matching the visual affordance.
-    currentRow: number;
-    currentCol: number;
-    rowActions: Map<number, ClickActionRange[]>;
+  text: string;
+  spans: Span[];
+  // currentRow / currentCol are maintained by `emit()` + `newline()` so
+  // click-action ranges land on the same cells the underlined text
+  // actually occupies. A click at (buffer_row, buffer_col) only fires
+  // if it falls inside one of the row's registered ranges — padding
+  // spaces, kv labels, and the frame border inside an inner row are
+  // not clickable, matching the visual affordance.
+  currentRow: number;
+  currentCol: number;
+  rowActions: Map<number, ClickActionRange[]>;
 };
 
 /** Column range within a row that carries a click target. */
-type ClickActionRange = { colStart: number; colEnd: number; action: ClickAction };
+type ClickActionRange = {
+  colStart: number;
+  colEnd: number;
+  action: ClickAction;
+};
 
 // Panel sizing. The frame targets ~90% of the viewport on both axes, clamped
 // so it stays readable in a narrow terminal without sprawling on a wide one.
@@ -86,17 +90,17 @@ const INNER_MAX = 110;
 const SIZE_FRACTION = 0.9;
 
 const C = {
-    frame: "ui.popup_border_fg",
-    title: "syntax.keyword",
-    accent: "syntax.function",
-    value: "syntax.string",
-    number: "syntax.constant",
-    muted: "syntax.comment",
-    branch: "syntax.variable",
-    ok: "ui.file_status_added_fg",
-    warn: "syntax.constant",
-    err: "diagnostic.error_fg",
-    barFill: "syntax.function",
+  frame: "ui.popup_border_fg",
+  title: "syntax.keyword",
+  accent: "syntax.function",
+  value: "syntax.string",
+  number: "syntax.constant",
+  muted: "syntax.comment",
+  branch: "syntax.variable",
+  ok: "ui.file_status_added_fg",
+  warn: "syntax.constant",
+  err: "diagnostic.error_fg",
+  barFill: "syntax.function",
 };
 
 // ── Public section API ─────────────────────────────────────────────────
@@ -110,71 +114,71 @@ const C = {
 // theme key under the hood so sections follow the active theme
 // without hard-coding RGB values.
 export type DashboardColor =
-    | "muted"
-    | "accent"
-    | "value"
-    | "number"
-    | "ok"
-    | "warn"
-    | "err"
-    | "branch";
+  | "muted"
+  | "accent"
+  | "value"
+  | "number"
+  | "ok"
+  | "warn"
+  | "err"
+  | "branch";
 
 const COLOR_KEYS: Record<DashboardColor, string> = {
-    muted: C.muted,
-    accent: C.accent,
-    value: C.value,
-    number: C.number,
-    ok: C.ok,
-    warn: C.warn,
-    err: C.err,
-    branch: C.branch,
+  muted: C.muted,
+  accent: C.accent,
+  value: C.value,
+  number: C.number,
+  ok: C.ok,
+  warn: C.warn,
+  err: C.err,
+  branch: C.branch,
 };
 
 export type DashboardTextOpts = {
-    color?: DashboardColor;
-    bold?: boolean;
-    /** OSC-8 hyperlink target; terminals that honor it render the span as a
-     *  clickable link. When only `onClick` is set (no `url`), the span is
-     *  still routed through Fresh's own mouse-click dispatch. */
-    url?: string;
-    /** Invoked when the user clicks anywhere on the row carrying this text
-     *  span, regardless of whether the terminal honors OSC-8. Multiple text
-     *  spans on the same row share a single row-level click target; the
-     *  first `onClick` emitted wins. */
-    onClick?: () => void;
+  color?: DashboardColor;
+  bold?: boolean;
+  /** OSC-8 hyperlink target; terminals that honor it render the span as a
+   *  clickable link. When only `onClick` is set (no `url`), the span is
+   *  still routed through Fresh's own mouse-click dispatch. */
+  url?: string;
+  /** Invoked when the user clicks anywhere on the row carrying this text
+   *  span, regardless of whether the terminal honors OSC-8. Multiple text
+   *  spans on the same row share a single row-level click target; the
+   *  first `onClick` emitted wins. */
+  onClick?: () => void;
 };
 
 /** One cell in a [`DashboardContext.columns`] row. Cells are clipped to
  *  `width` (or their natural width when omitted) so a long value can never
  *  push the columns to its right out of alignment. */
 export type DashboardCell = DashboardTextOpts & {
-    text: string;
-    /** Column width in cells. Omit for "as wide as the text". */
-    width?: number;
-    /** Right-align inside `width`. Default left. */
-    align?: "left" | "right";
+  text: string;
+  /** Column width in cells. Omit for "as wide as the text". */
+  width?: number;
+  /** Right-align inside `width`. Default left. */
+  align?: "left" | "right";
 };
 
 export type DashboardContext = {
-    /** Inner panel width in columns. Sections should lay out to this — rows
-     *  wider than it are clipped by the frame renderer, so anything past it
-     *  is not merely ugly, it is invisible. */
-    readonly width: number;
-    /** Emit a label/value row like "    label     value". The label
-     *  column is padded to 10 cols so multi-row sections align, and the
-     *  value is clipped to the remaining panel width. */
-    kv(label: string, value: string, color?: DashboardColor): void;
-    /** Emit a styled text segment on the current row. No newline is
-     *  added — call `newline()` when the row is finished. */
-    text(s: string, opts?: DashboardTextOpts): void;
-    /** Emit a whole row of fixed-width cells and end it. Each cell is
-     *  clipped to its own width, and the row as a whole is clipped to
-     *  `width`, so a column layout stays aligned at any panel size. */
-    columns(cells: DashboardCell[]): void;
-    /** End the current row. */
-    newline(): void;
-    /** Shortcut for a single-row error message: "    status    why". */
-    error(message: string): void;
+  /** Inner panel width in columns. Sections should lay out to this — rows
+   *  wider than it are clipped by the frame renderer, so anything past it
+   *  is not merely ugly, it is invisible. */
+  readonly width: number;
+  /** Emit a label/value row like "    label     value". The label
+   *  column is padded to 10 cols so multi-row sections align, and the
+   *  value is clipped to the remaining panel width. */
+  kv(label: string, value: string, color?: DashboardColor): void;
+  /** Emit a styled text segment on the current row. No newline is
+   *  added — call `newline()` when the row is finished. */
+  text(s: string, opts?: DashboardTextOpts): void;
+  /** Emit a whole row of fixed-width cells and end it. Each cell is
+   *  clipped to its own width, and the row as a whole is clipped to
+   *  `width`, so a column layout stays aligned at any panel size. */
+  columns(cells: DashboardCell[]): void;
+  /** End the current row. */
+  newline(): void;
+  /** Shortcut for a single-row error message: "    status    why". */
+  error(message: string): void;
 };
 
 export type SectionRefresh = (ctx: DashboardContext) => Promise<void>;
@@ -184,10 +188,10 @@ export type SectionRefresh = (ctx: DashboardContext) => Promise<void>;
  *  that overruns `timeoutMs` is abandoned rather than blocking the section
  *  (or the panel) indefinitely. */
 export type SectionOptions = {
-    /** Minimum age before a refresh is re-run. Default 30s, floor 1s. */
-    ttlMs?: number;
-    /** Abandon a refresh that takes longer than this. Default 8s. */
-    timeoutMs?: number;
+  /** Minimum age before a refresh is re-run. Default 30s, floor 1s. */
+  ttlMs?: number;
+  /** Abandon a refresh that takes longer than this. Default 8s. */
+  timeoutMs?: number;
 };
 
 const DEFAULT_TTL_MS = 30_000;
@@ -201,70 +205,70 @@ const DEFAULT_TIMEOUT_MS = 8_000;
  * tear them down again via `removeSection` / `clearAllSections`.
  */
 export type DashboardApi = {
-    registerSection(
-        name: string,
-        refresh: SectionRefresh,
-        options?: SectionOptions,
-    ): () => void;
-    /** Remove every registered section whose name matches `name`.
-     *  Returns true if at least one section was removed. */
-    removeSection(name: string): boolean;
-    /** Remove every registered section, including the bundled
-     *  built-ins (git, disk). */
-    clearAllSections(): void;
-    /** Toggle the ambient auto-open behaviour for this session.
-     *  Equivalent to setting `plugins.dashboard.auto-open` in the
-     *  user config, but scoped to the current process. */
-    setAutoOpen(enabled: boolean): void;
-    /** Refresh handlers for the built-in widgets that aren't
-     *  registered by default (both hit the network). Pass one to
-     *  `registerSection` from init.ts to enable it. */
-    builtinHandlers: {
-        weather: SectionRefresh;
-        github: SectionRefresh;
-    };
+  registerSection(
+    name: string,
+    refresh: SectionRefresh,
+    options?: SectionOptions,
+  ): () => void;
+  /** Remove every registered section whose name matches `name`.
+   *  Returns true if at least one section was removed. */
+  removeSection(name: string): boolean;
+  /** Remove every registered section, including the bundled
+   *  built-ins (git, disk). */
+  clearAllSections(): void;
+  /** Toggle the ambient auto-open behaviour for this session.
+   *  Equivalent to setting `plugins.dashboard.auto-open` in the
+   *  user config, but scoped to the current process. */
+  setAutoOpen(enabled: boolean): void;
+  /** Refresh handlers for the built-in widgets that aren't
+   *  registered by default (both hit the network). Pass one to
+   *  `registerSection` from init.ts to enable it. */
+  builtinHandlers: {
+    weather: SectionRefresh;
+    github: SectionRefresh;
+  };
 };
 
 declare global {
-    interface FreshPluginRegistry {
-        dashboard: DashboardApi;
-    }
+  interface FreshPluginRegistry {
+    dashboard: DashboardApi;
+  }
 }
 
 type RegisteredSection = {
-    id: number;
-    name: string;
-    refresh: SectionRefresh;
-    /** Rendered output from the most recent refresh. Re-used until the
-     *  next refresh lands so the dashboard doesn't flash back to a
-     *  "loading…" placeholder on every tick. */
-    draw: Draw;
-    ttlMs: number;
-    timeoutMs: number;
-    /** Panel width `draw` was produced for. A resize invalidates the cached
-     *  output without needing a data refresh. */
-    drawWidth: number;
-    /** Wall clock at the last refresh start. The TTL scheduler compares
-     *  against this, so a slow section cannot be re-entered on every tick. */
-    startedAt: number;
-    /** A refresh is in flight — the TTL scheduler must not start a second. */
-    inFlight: boolean;
-    /** The last refresh failed or timed out while `draw` still holds good
-     *  data: keep showing it, but say so in the section heading. */
-    stale: boolean;
-    /** Nothing has ever landed, so `draw` is still the placeholder. */
-    everLanded: boolean;
-    /** `draw` is an error/timeout row rather than section data. Such a draw
-     *  carries nothing worth preserving, so a later failure re-renders it at
-     *  the current width instead of keeping a row sized for an old panel. */
-    drawIsError: boolean;
+  id: number;
+  name: string;
+  refresh: SectionRefresh;
+  /** Rendered output from the most recent refresh. Re-used until the
+   *  next refresh lands so the dashboard doesn't flash back to a
+   *  "loading…" placeholder on every tick. */
+  draw: Draw;
+  ttlMs: number;
+  timeoutMs: number;
+  /** Panel width `draw` was produced for. A resize invalidates the cached
+   *  output without needing a data refresh. */
+  drawWidth: number;
+  /** Wall clock at the last refresh start. The TTL scheduler compares
+   *  against this, so a slow section cannot be re-entered on every tick. */
+  startedAt: number;
+  /** A refresh is in flight — the TTL scheduler must not start a second. */
+  inFlight: boolean;
+  /** The last refresh failed or timed out while `draw` still holds good
+   *  data: keep showing it, but say so in the section heading. */
+  stale: boolean;
+  /** Nothing has ever landed, so `draw` is still the placeholder. */
+  everLanded: boolean;
+  /** `draw` is an error/timeout row rather than section data. Such a draw
+   *  carries nothing worth preserving, so a later failure re-renders it at
+   *  the current width instead of keeping a row sized for an old panel. */
+  drawIsError: boolean;
 };
 
 /** Heading suffix describing a section's data freshness. */
 function sectionNote(entry: RegisteredSection): string | null {
-    if (!entry.everLanded) return entry.inFlight ? "loading" : null;
-    if (entry.stale) return entry.inFlight ? "stale, refreshing" : "stale";
-    return null;
+  if (!entry.everLanded) return entry.inFlight ? "loading" : null;
+  if (entry.stale) return entry.inFlight ? "stale, refreshing" : "stale";
+  return null;
 }
 
 // ── Internal state ─────────────────────────────────────────────────────
@@ -298,10 +302,10 @@ const registeredSections: RegisteredSection[] = [];
 // spans the union and the activation dispatches the first range's action
 // so Enter matches the leftmost click target on that row.
 type ClickTarget = {
-    bufferRow: number; // absolute buffer row (after topPad)
-    colStart: number; // visual col (inclusive)
-    colEnd: number; // visual col (exclusive)
-    action: ClickAction;
+  bufferRow: number; // absolute buffer row (after topPad)
+  colStart: number; // visual col (inclusive)
+  colEnd: number; // visual col (exclusive)
+  action: ClickAction;
 };
 let clickableTargets: ClickTarget[] = [];
 let focusedIndex = 0;
@@ -309,84 +313,100 @@ let focusedIndex = 0;
 // ── Drawing primitives ─────────────────────────────────────────────────
 
 function utf8Len(s: string): number {
-    return editor.utf8ByteLength(s);
+  return editor.utf8ByteLength(s);
 }
 
 function visualWidth(s: string): number {
-    // Approximation: wide (E. Asian / most emoji) = 2 cols, everything else = 1.
-    let w = 0;
-    for (const ch of s) {
-        const cp = ch.codePointAt(0) ?? 0;
-        if (cp === 0) continue;
-        if (cp < 0x80) { w += 1; continue; }
-        // CJK / wide ranges (coarse).
-        if (
-            (cp >= 0x1100 && cp <= 0x115f) ||
-            (cp >= 0x2e80 && cp <= 0x303e) ||
-            (cp >= 0x3041 && cp <= 0x33ff) ||
-            (cp >= 0x3400 && cp <= 0x4dbf) ||
-            (cp >= 0x4e00 && cp <= 0x9fff) ||
-            (cp >= 0xa000 && cp <= 0xa4cf) ||
-            (cp >= 0xac00 && cp <= 0xd7a3) ||
-            (cp >= 0xf900 && cp <= 0xfaff) ||
-            (cp >= 0xfe30 && cp <= 0xfe4f) ||
-            (cp >= 0xff00 && cp <= 0xff60) ||
-            (cp >= 0xffe0 && cp <= 0xffe6) ||
-            (cp >= 0x1f300 && cp <= 0x1f64f) ||
-            (cp >= 0x1f900 && cp <= 0x1f9ff)
-        ) { w += 2; continue; }
-        w += 1;
+  // Approximation: wide (E. Asian / most emoji) = 2 cols, everything else = 1.
+  let w = 0;
+  for (const ch of s) {
+    const cp = ch.codePointAt(0) ?? 0;
+    if (cp === 0) continue;
+    if (cp < 0x80) {
+      w += 1;
+      continue;
     }
-    return w;
+    // CJK / wide ranges (coarse).
+    if (
+      (cp >= 0x1100 && cp <= 0x115f) ||
+      (cp >= 0x2e80 && cp <= 0x303e) ||
+      (cp >= 0x3041 && cp <= 0x33ff) ||
+      (cp >= 0x3400 && cp <= 0x4dbf) ||
+      (cp >= 0x4e00 && cp <= 0x9fff) ||
+      (cp >= 0xa000 && cp <= 0xa4cf) ||
+      (cp >= 0xac00 && cp <= 0xd7a3) ||
+      (cp >= 0xf900 && cp <= 0xfaff) ||
+      (cp >= 0xfe30 && cp <= 0xfe4f) ||
+      (cp >= 0xff00 && cp <= 0xff60) ||
+      (cp >= 0xffe0 && cp <= 0xffe6) ||
+      (cp >= 0x1f300 && cp <= 0x1f64f) ||
+      (cp >= 0x1f900 && cp <= 0x1f9ff)
+    ) {
+      w += 2;
+      continue;
+    }
+    w += 1;
+  }
+  return w;
 }
 
 function pad(s: string, width: number): string {
-    const missing = Math.max(0, width - visualWidth(s));
-    return s + " ".repeat(missing);
+  const missing = Math.max(0, width - visualWidth(s));
+  return s + " ".repeat(missing);
 }
 
 function emit(
-    d: Draw,
-    s: string,
-    opts?: { fg?: string; bold?: boolean; url?: string; action?: ClickAction },
+  d: Draw,
+  s: string,
+  opts?: { fg?: string; bold?: boolean; url?: string; action?: ClickAction },
 ) {
-    if (!s) return;
-    const start = utf8Len(d.text);
-    d.text += s;
-    const width = visualWidth(s);
-    const startCol = d.currentCol;
-    d.currentCol += width;
-    // Anything the user can click gets underlined so it reads as a link
-    // even in terminals that don't render OSC-8 hyperlinks.
-    const clickable = !!(opts?.url || opts?.action);
-    if (opts?.fg || opts?.bold || opts?.url || clickable) {
-        d.spans.push({
-            start,
-            end: start + utf8Len(s),
-            fg: opts?.fg,
-            bold: opts?.bold,
-            underline: clickable || undefined,
-            url: opts?.url,
-        });
-    }
-    if (opts?.action) {
-        // Record a column-scoped range so the click handler can match
-        // clicks only on the text cells the underline actually covers,
-        // not on padding or kv labels sharing the row.
-        const ranges = d.rowActions.get(d.currentRow) ?? [];
-        ranges.push({ colStart: startCol, colEnd: startCol + width, action: opts.action });
-        d.rowActions.set(d.currentRow, ranges);
-    }
+  if (!s) return;
+  const start = utf8Len(d.text);
+  d.text += s;
+  const width = visualWidth(s);
+  const startCol = d.currentCol;
+  d.currentCol += width;
+  // Anything the user can click gets underlined so it reads as a link
+  // even in terminals that don't render OSC-8 hyperlinks.
+  const clickable = !!(opts?.url || opts?.action);
+  if (opts?.fg || opts?.bold || opts?.url || clickable) {
+    d.spans.push({
+      start,
+      end: start + utf8Len(s),
+      fg: opts?.fg,
+      bold: opts?.bold,
+      underline: clickable || undefined,
+      url: opts?.url,
+    });
+  }
+  if (opts?.action) {
+    // Record a column-scoped range so the click handler can match
+    // clicks only on the text cells the underline actually covers,
+    // not on padding or kv labels sharing the row.
+    const ranges = d.rowActions.get(d.currentRow) ?? [];
+    ranges.push({
+      colStart: startCol,
+      colEnd: startCol + width,
+      action: opts.action,
+    });
+    d.rowActions.set(d.currentRow, ranges);
+  }
 }
 
 function newline(d: Draw) {
-    d.text += "\n";
-    d.currentRow++;
-    d.currentCol = 0;
+  d.text += "\n";
+  d.currentRow++;
+  d.currentCol = 0;
 }
 
 function emptyDraw(): Draw {
-    return { text: "", spans: [], currentRow: 0, currentCol: 0, rowActions: new Map() };
+  return {
+    text: "",
+    spans: [],
+    currentRow: 0,
+    currentCol: 0,
+    rowActions: new Map(),
+  };
 }
 
 // ── Sections (sentinel / placeholder factories) ────────────────────────
@@ -395,16 +415,16 @@ function emptyDraw(): Draw {
 // initial "loading…" placeholder and for top-level error messages
 // that replace a whole section's body.
 function statusRowDraw(text: string, fg: string): Draw {
-    const d = emptyDraw();
-    const label = pad("status", 10);
-    emit(d, "    " + label, { fg: C.muted });
-    emit(d, text, { fg });
-    newline(d);
-    return d;
+  const d = emptyDraw();
+  const label = pad("status", 10);
+  emit(d, "    " + label, { fg: C.muted });
+  emit(d, text, { fg });
+  newline(d);
+  return d;
 }
 
 function loadingDraw(): Draw {
-    return statusRowDraw("loading…", C.muted);
+  return statusRowDraw("loading…", C.muted);
 }
 
 // ── Section registry + DashboardContext factory ────────────────────────
@@ -417,69 +437,75 @@ function loadingDraw(): Draw {
 // against the space it actually has instead of padding to a width it cannot
 // see. The frame renderer still clips — this is cooperation, not trust.
 function makeContext(width: number): { ctx: DashboardContext; draw: Draw } {
-    const d = emptyDraw();
-    const KV_LABEL = 10;
-    const KV_INDENT = 4;
-    const actionFor = (opts?: DashboardTextOpts): ClickAction | undefined =>
-        opts?.onClick
-            ? { kind: "callback", fn: opts.onClick }
-            : opts?.url
-                ? { kind: "open-url", url: opts.url }
-                : undefined;
-    const ctx: DashboardContext = {
-        width,
-        kv(label, value, color) {
-            const fg = color ? COLOR_KEYS[color] : C.value;
-            emit(d, " ".repeat(KV_INDENT) + pad(truncate(label, KV_LABEL), KV_LABEL), {
-                fg: C.muted,
-            });
-            emit(d, truncate(value, Math.max(1, width - KV_INDENT - KV_LABEL)), { fg });
-            newline(d);
+  const d = emptyDraw();
+  const KV_LABEL = 10;
+  const KV_INDENT = 4;
+  const actionFor = (opts?: DashboardTextOpts): ClickAction | undefined =>
+    opts?.onClick
+      ? { kind: "callback", fn: opts.onClick }
+      : opts?.url
+        ? { kind: "open-url", url: opts.url }
+        : undefined;
+  const ctx: DashboardContext = {
+    width,
+    kv(label, value, color) {
+      const fg = color ? COLOR_KEYS[color] : C.value;
+      emit(
+        d,
+        " ".repeat(KV_INDENT) + pad(truncate(label, KV_LABEL), KV_LABEL),
+        {
+          fg: C.muted,
         },
-        text(s, opts) {
-            emit(d, s, {
-                fg: opts?.color ? COLOR_KEYS[opts.color] : undefined,
-                bold: opts?.bold,
-                url: opts?.url,
-                action: actionFor(opts),
-            });
-        },
-        columns(cells) {
-            let remaining = width;
-            for (const cell of cells) {
-                if (remaining <= 0) break;
-                const cellWidth = Math.min(
-                    remaining,
-                    cell.width ?? visualWidth(cell.text),
-                );
-                const clipped = truncate(cell.text, cellWidth);
-                const slack = Math.max(0, cellWidth - visualWidth(clipped));
-                const before = cell.align === "right" ? " ".repeat(slack) : "";
-                const after = cell.align === "right" ? "" : " ".repeat(slack);
-                if (before) emit(d, before, undefined);
-                emit(d, clipped, {
-                    fg: cell.color ? COLOR_KEYS[cell.color] : undefined,
-                    bold: cell.bold,
-                    url: cell.url,
-                    action: actionFor(cell),
-                });
-                if (after) emit(d, after, undefined);
-                remaining -= cellWidth;
-            }
-            newline(d);
-        },
-        newline() {
-            newline(d);
-        },
-        error(message) {
-            emit(d, " ".repeat(KV_INDENT) + pad("status", KV_LABEL), { fg: C.muted });
-            emit(d, truncate(message, Math.max(1, width - KV_INDENT - KV_LABEL)), {
-                fg: C.err,
-            });
-            newline(d);
-        },
-    };
-    return { ctx, draw: d };
+      );
+      emit(d, truncate(value, Math.max(1, width - KV_INDENT - KV_LABEL)), {
+        fg,
+      });
+      newline(d);
+    },
+    text(s, opts) {
+      emit(d, s, {
+        fg: opts?.color ? COLOR_KEYS[opts.color] : undefined,
+        bold: opts?.bold,
+        url: opts?.url,
+        action: actionFor(opts),
+      });
+    },
+    columns(cells) {
+      let remaining = width;
+      for (const cell of cells) {
+        if (remaining <= 0) break;
+        const cellWidth = Math.min(
+          remaining,
+          cell.width ?? visualWidth(cell.text),
+        );
+        const clipped = truncate(cell.text, cellWidth);
+        const slack = Math.max(0, cellWidth - visualWidth(clipped));
+        const before = cell.align === "right" ? " ".repeat(slack) : "";
+        const after = cell.align === "right" ? "" : " ".repeat(slack);
+        if (before) emit(d, before, undefined);
+        emit(d, clipped, {
+          fg: cell.color ? COLOR_KEYS[cell.color] : undefined,
+          bold: cell.bold,
+          url: cell.url,
+          action: actionFor(cell),
+        });
+        if (after) emit(d, after, undefined);
+        remaining -= cellWidth;
+      }
+      newline(d);
+    },
+    newline() {
+      newline(d);
+    },
+    error(message) {
+      emit(d, " ".repeat(KV_INDENT) + pad("status", KV_LABEL), { fg: C.muted });
+      emit(d, truncate(message, Math.max(1, width - KV_INDENT - KV_LABEL)), {
+        fg: C.err,
+      });
+      newline(d);
+    },
+  };
+  return { ctx, draw: d };
 }
 
 // Register a dashboard section. `refresh` runs on open and thereafter
@@ -487,37 +513,37 @@ function makeContext(width: number): { ctx: DashboardContext; draw: Draw } {
 // fixed global tick, so adding sections does not multiply the ambient
 // subprocess rate. Returns a function that unregisters the section.
 function registerSection(
-    name: string,
-    refresh: SectionRefresh,
-    options?: SectionOptions,
+  name: string,
+  refresh: SectionRefresh,
+  options?: SectionOptions,
 ): () => void {
-    const id = nextSectionId++;
-    const entry: RegisteredSection = {
-        id,
-        name,
-        refresh,
-        draw: loadingDraw(),
-        ttlMs: Math.max(MIN_TTL_MS, options?.ttlMs ?? DEFAULT_TTL_MS),
-        timeoutMs: Math.max(500, options?.timeoutMs ?? DEFAULT_TIMEOUT_MS),
-        drawWidth: -1,
-        startedAt: 0,
-        inFlight: false,
-        stale: false,
-        everLanded: false,
-        drawIsError: false,
-    };
-    registeredSections.push(entry);
-    // Kick an immediate refresh so the initial frame isn't "loading…"
-    // for any longer than the callback actually takes.
-    void refreshSection(entry, fetchToken);
-    paint();
-    return () => {
-        const idx = registeredSections.findIndex((s) => s.id === id);
-        if (idx >= 0) {
-            registeredSections.splice(idx, 1);
-            paint();
-        }
-    };
+  const id = nextSectionId++;
+  const entry: RegisteredSection = {
+    id,
+    name,
+    refresh,
+    draw: loadingDraw(),
+    ttlMs: Math.max(MIN_TTL_MS, options?.ttlMs ?? DEFAULT_TTL_MS),
+    timeoutMs: Math.max(500, options?.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+    drawWidth: -1,
+    startedAt: 0,
+    inFlight: false,
+    stale: false,
+    everLanded: false,
+    drawIsError: false,
+  };
+  registeredSections.push(entry);
+  // Kick an immediate refresh so the initial frame isn't "loading…"
+  // for any longer than the callback actually takes.
+  void refreshSection(entry, fetchToken);
+  paint();
+  return () => {
+    const idx = registeredSections.findIndex((s) => s.id === id);
+    if (idx >= 0) {
+      registeredSections.splice(idx, 1);
+      paint();
+    }
+  };
 }
 
 // Remove every registered section whose name matches `name`. Returns
@@ -526,24 +552,24 @@ function registerSection(
 // `registerSection`. In-flight refreshes for removed sections resolve
 // onto detached entry objects and no longer influence what's rendered.
 function removeSection(name: string): boolean {
-    let removed = false;
-    for (let i = registeredSections.length - 1; i >= 0; i--) {
-        if (registeredSections[i].name === name) {
-            registeredSections.splice(i, 1);
-            removed = true;
-        }
+  let removed = false;
+  for (let i = registeredSections.length - 1; i >= 0; i--) {
+    if (registeredSections[i].name === name) {
+      registeredSections.splice(i, 1);
+      removed = true;
     }
-    if (removed) paint();
-    return removed;
+  }
+  if (removed) paint();
+  return removed;
 }
 
 // Clear every registered section, including the bundled built-ins.
 // The dashboard frame is still drawn — only the section body between
 // header and footer is empty until something registers a new section.
 function clearAllSections(): void {
-    if (registeredSections.length === 0) return;
-    registeredSections.length = 0;
-    paint();
+  if (registeredSections.length === 0) return;
+  registeredSections.length = 0;
+  paint();
 }
 
 // Panel width the next paint will use. Sections need it before the paint
@@ -558,76 +584,76 @@ let currentInnerWidth = INNER_MIN;
 // panel or stalling its neighbours (each section is refreshed independently,
 // so none of this blocks another).
 async function refreshSection(entry: RegisteredSection, myToken: number) {
-    if (entry.inFlight) return;
-    entry.inFlight = true;
-    entry.startedAt = Date.now();
-    const width = currentInnerWidth;
-    const { ctx, draw } = makeContext(width);
-    const land = (next: Draw, ok: boolean) => {
-        if (myToken !== fetchToken) return;
-        entry.draw = next;
-        entry.drawWidth = width;
-        entry.everLanded = true;
-        entry.stale = !ok;
-        entry.drawIsError = !ok;
-        paint();
-    };
-    // Stale-while-revalidate only makes sense when there is good data to keep.
-    // A section that has only ever failed has nothing to preserve, so its row
-    // is re-rendered — otherwise the first failure's row is frozen at whatever
-    // panel width happened to be current then, and a resize never reaches it.
-    const hasGoodData = entry.everLanded && !entry.drawIsError;
-    try {
-        const timedOut = Symbol("timeout");
-        // Keep a handle on the section's own promise. A timeout can stop
-        // *waiting* on it, but nothing here can stop it running — so the
-        // handle is what tells us when the section is free again.
-        const own = entry.refresh(ctx).then(() => "ok" as const);
-        const race = await Promise.race([
-            own,
-            editor.delay(entry.timeoutMs).then(() => timedOut),
-        ]);
-        if (race === timedOut) {
-            // `inFlight` deliberately stays set. Clearing it here would let the
-            // TTL scheduler start another refresh every `ttlMs` while the first
-            // one is still running — a section that hangs for good would then
-            // accumulate one pending promise, context and draw closure per
-            // tick, forever. Releasing it when (and only when) the original
-            // settles bounds a hung section to the single refresh it is stuck
-            // in, and lets a merely-slow one be retried once it finishes. The
-            // `.then` also swallows a late rejection, which would otherwise
-            // surface as an unhandled promise rejection long after the row
-            // already said "timed out".
-            const release = () => {
-                entry.inFlight = false;
-            };
-            own.then(release, release);
-            if (hasGoodData) {
-                // Keep the last good body; the heading carries the reason.
-                entry.stale = true;
-                if (myToken === fetchToken) paint();
-            } else {
-                const fallback = makeContext(width);
-                fallback.ctx.error(`timed out after ${entry.timeoutMs}ms`);
-                land(fallback.draw, false);
-            }
-            return;
-        }
+  if (entry.inFlight) return;
+  entry.inFlight = true;
+  entry.startedAt = Date.now();
+  const width = currentInnerWidth;
+  const { ctx, draw } = makeContext(width);
+  const land = (next: Draw, ok: boolean) => {
+    if (myToken !== fetchToken) return;
+    entry.draw = next;
+    entry.drawWidth = width;
+    entry.everLanded = true;
+    entry.stale = !ok;
+    entry.drawIsError = !ok;
+    paint();
+  };
+  // Stale-while-revalidate only makes sense when there is good data to keep.
+  // A section that has only ever failed has nothing to preserve, so its row
+  // is re-rendered — otherwise the first failure's row is frozen at whatever
+  // panel width happened to be current then, and a resize never reaches it.
+  const hasGoodData = entry.everLanded && !entry.drawIsError;
+  try {
+    const timedOut = Symbol("timeout");
+    // Keep a handle on the section's own promise. A timeout can stop
+    // *waiting* on it, but nothing here can stop it running — so the
+    // handle is what tells us when the section is free again.
+    const own = entry.refresh(ctx).then(() => "ok" as const);
+    const race = await Promise.race([
+      own,
+      editor.delay(entry.timeoutMs).then(() => timedOut),
+    ]);
+    if (race === timedOut) {
+      // `inFlight` deliberately stays set. Clearing it here would let the
+      // TTL scheduler start another refresh every `ttlMs` while the first
+      // one is still running — a section that hangs for good would then
+      // accumulate one pending promise, context and draw closure per
+      // tick, forever. Releasing it when (and only when) the original
+      // settles bounds a hung section to the single refresh it is stuck
+      // in, and lets a merely-slow one be retried once it finishes. The
+      // `.then` also swallows a late rejection, which would otherwise
+      // surface as an unhandled promise rejection long after the row
+      // already said "timed out".
+      const release = () => {
         entry.inFlight = false;
-        land(draw, true);
-    } catch (e) {
-        entry.inFlight = false;
-        // A thrown error becomes a one-line error row so a buggy
-        // third-party section can't blank the whole dashboard.
-        if (hasGoodData) {
-            entry.stale = true;
-            if (myToken === fetchToken) paint();
-            return;
-        }
+      };
+      own.then(release, release);
+      if (hasGoodData) {
+        // Keep the last good body; the heading carries the reason.
+        entry.stale = true;
+        if (myToken === fetchToken) paint();
+      } else {
         const fallback = makeContext(width);
-        fallback.ctx.error(`failed — ${truncate(String(e), 60)}`);
+        fallback.ctx.error(`timed out after ${entry.timeoutMs}ms`);
         land(fallback.draw, false);
+      }
+      return;
     }
+    entry.inFlight = false;
+    land(draw, true);
+  } catch (e) {
+    entry.inFlight = false;
+    // A thrown error becomes a one-line error row so a buggy
+    // third-party section can't blank the whole dashboard.
+    if (hasGoodData) {
+      entry.stale = true;
+      if (myToken === fetchToken) paint();
+      return;
+    }
+    const fallback = makeContext(width);
+    fallback.ctx.error(`failed — ${truncate(String(e), 60)}`);
+    land(fallback.draw, false);
+  }
 }
 
 // ── Frame + section renderer ───────────────────────────────────────────
@@ -636,235 +662,236 @@ async function refreshSection(entry: RegisteredSection, myToken: number) {
 // every second for the lifetime of the panel, which is real ambient cost for
 // no information a developer needs from a home screen.
 function clockNow(): string {
-    const d = new Date();
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mm = String(d.getMinutes()).padStart(2, "0");
-    return `${hh}:${mm}`;
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
 }
 
 // Inner content width (between the two border glyphs) and the centering pad.
 // The `viewportW - 2` term is what guarantees the box always fits: below
 // ~26 cols the frame simply shrinks instead of overflowing and wrapping.
 function frameWidth(viewportW: number): { inner: number; leftPad: number } {
-    const avail = Math.max(1, viewportW - 2);
-    const target = Math.floor(viewportW * SIZE_FRACTION) - 2;
-    const inner = Math.max(1, Math.min(INNER_MAX, avail, Math.max(INNER_MIN, target)));
-    const leftPad = Math.max(0, Math.floor((viewportW - (inner + 2)) / 2));
-    return { inner, leftPad };
+  const avail = Math.max(1, viewportW - 2);
+  const target = Math.floor(viewportW * SIZE_FRACTION) - 2;
+  const inner = Math.max(
+    1,
+    Math.min(INNER_MAX, avail, Math.max(INNER_MIN, target)),
+  );
+  const leftPad = Math.max(0, Math.floor((viewportW - (inner + 2)) / 2));
+  return { inner, leftPad };
 }
 
 // Rows the frame may occupy. Vertical counterpart of `frameWidth`: on a short
 // terminal the body is clipped with a "more rows" marker rather than running
 // off the bottom of the panel.
 function frameRowBudget(viewportH: number): number {
-    const target = Math.floor(viewportH * SIZE_FRACTION);
-    return Math.max(5, Math.min(viewportH, target));
+  const target = Math.floor(viewportH * SIZE_FRACTION);
+  return Math.max(5, Math.min(viewportH, target));
 }
 
-function renderFrame(
-    inner: number,
-    leftPad: number,
-    rowBudget: number,
-): Draw {
-    const d: Draw = emptyDraw();
-    const lp = " ".repeat(leftPad);
+function renderFrame(inner: number, leftPad: number, rowBudget: number): Draw {
+  const d: Draw = emptyDraw();
+  const lp = " ".repeat(leftPad);
 
-    // Top border: ╭── FRESH ────…──── HH:MM ──╮
-    //
-    // Composed against an explicit budget and degraded (stamp first, then
-    // title) when `inner` is too small, so the row is always exactly `inner`
-    // columns between the corners no matter how narrow the terminal is.
-    emit(d, lp, undefined);
-    emit(d, "╭", { fg: C.frame });
-    {
-        const titleSegment = " FRESH ";
-        const stampSegment = ` ${clockNow()} `;
-        const lead = 2;
-        const tail = 2;
-        const titleW = visualWidth(titleSegment);
-        const stampW = visualWidth(stampSegment);
-        const showTitle = inner >= lead + titleW + 1 + tail;
-        const showStamp = showTitle && inner >= lead + titleW + 1 + stampW + tail;
-        if (!showTitle) {
-            emit(d, "─".repeat(inner), { fg: C.frame });
-        } else {
-            const fill =
-                inner - lead - tail - titleW - (showStamp ? stampW : 0);
-            emit(d, "─".repeat(lead), { fg: C.frame });
-            emit(d, titleSegment, { fg: C.title, bold: true });
-            emit(d, "─".repeat(Math.max(0, fill)), { fg: C.frame });
-            if (showStamp) emit(d, stampSegment, { fg: C.muted });
-            emit(d, "─".repeat(tail), { fg: C.frame });
-        }
+  // Top border: ╭── FRESH ────…──── HH:MM ──╮
+  //
+  // Composed against an explicit budget and degraded (stamp first, then
+  // title) when `inner` is too small, so the row is always exactly `inner`
+  // columns between the corners no matter how narrow the terminal is.
+  emit(d, lp, undefined);
+  emit(d, "╭", { fg: C.frame });
+  {
+    const titleSegment = " FRESH ";
+    const stampSegment = ` ${clockNow()} `;
+    const lead = 2;
+    const tail = 2;
+    const titleW = visualWidth(titleSegment);
+    const stampW = visualWidth(stampSegment);
+    const showTitle = inner >= lead + titleW + 1 + tail;
+    const showStamp = showTitle && inner >= lead + titleW + 1 + stampW + tail;
+    if (!showTitle) {
+      emit(d, "─".repeat(inner), { fg: C.frame });
+    } else {
+      const fill = inner - lead - tail - titleW - (showStamp ? stampW : 0);
+      emit(d, "─".repeat(lead), { fg: C.frame });
+      emit(d, titleSegment, { fg: C.title, bold: true });
+      emit(d, "─".repeat(Math.max(0, fill)), { fg: C.frame });
+      if (showStamp) emit(d, stampSegment, { fg: C.muted });
+      emit(d, "─".repeat(tail), { fg: C.frame });
     }
-    emit(d, "╮", { fg: C.frame });
+  }
+  emit(d, "╮", { fg: C.frame });
+  newline(d);
+
+  // Rows still available for body content, reserving the top border, the
+  // blank row below it, and the bottom border.
+  let rowsLeft = Math.max(0, rowBudget - 3);
+  let clippedRows = 0;
+
+  const blankInner = () => {
+    emit(d, lp, undefined);
+    emit(d, "│", { fg: C.frame });
+    emit(d, " ".repeat(inner), undefined);
+    emit(d, "│", { fg: C.frame });
     newline(d);
+  };
 
-    // Rows still available for body content, reserving the top border, the
-    // blank row below it, and the bottom border.
-    let rowsLeft = Math.max(0, rowBudget - 3);
-    let clippedRows = 0;
+  if (rowsLeft > 0) {
+    blankInner();
+    rowsLeft--;
+  }
 
-    const blankInner = () => {
-        emit(d, lp, undefined);
-        emit(d, "│", { fg: C.frame });
-        emit(d, " ".repeat(inner), undefined);
-        emit(d, "│", { fg: C.frame });
-        newline(d);
-    };
+  // Every body row goes through here, so clipping is central: a section
+  // emitting a 200-column line cannot push the right border out, and its
+  // click targets are clamped to the cells that survived the clip.
+  const row = (
+    body: { text: string; spans: Span[] },
+    ranges?: ClickActionRange[],
+  ) => {
+    if (rowsLeft <= 0) {
+      clippedRows++;
+      return;
+    }
+    rowsLeft--;
+    emit(d, lp, undefined);
+    emit(d, "│", { fg: C.frame });
+    // body is already one line (no embedded newlines) — renderSection
+    // slices multi-line section output before calling row().
+    const line = truncate(body.text, inner);
+    const lineBytes = utf8Len(line);
+    const used = visualWidth(line);
+    const startInDoc = utf8Len(d.text);
+    // Content starts in the outer draw at this visual column —
+    // section-body ranges are offset by it below so clicks hit
+    // the same cells the text actually lives in.
+    const contentStartCol = d.currentCol;
+    d.text += line;
+    d.currentCol += used;
+    for (const sp of body.spans) {
+      if (sp.start < lineBytes) {
+        d.spans.push({
+          start: startInDoc + sp.start,
+          end: startInDoc + Math.min(sp.end, lineBytes),
+          fg: sp.fg,
+          bold: sp.bold,
+          underline: sp.underline,
+          url: sp.url,
+        });
+      }
+    }
+    if (ranges && ranges.length > 0) {
+      // Clamp to the clipped text: a target hanging off the right edge
+      // would highlight (and accept clicks on) the border cell.
+      const shifted: ClickActionRange[] = [];
+      for (const r of ranges) {
+        const colStart = Math.min(r.colStart, used);
+        const colEnd = Math.min(r.colEnd, used);
+        if (colEnd <= colStart) continue;
+        shifted.push({
+          colStart: colStart + contentStartCol,
+          colEnd: colEnd + contentStartCol,
+          action: r.action,
+        });
+      }
+      if (shifted.length > 0) {
+        const existing = d.rowActions.get(d.currentRow) ?? [];
+        d.rowActions.set(d.currentRow, existing.concat(shifted));
+      }
+    }
+    emit(d, " ".repeat(Math.max(0, inner - used)), undefined);
+    emit(d, "│", { fg: C.frame });
+    newline(d);
+  };
 
+  const plainRow = (text: string, fg: string) => {
+    row({ text, spans: [{ start: 0, end: utf8Len(text), fg }] });
+  };
+
+  // Section heading: name in caps followed by a dim rule out to the right
+  // edge. A rule reads as hierarchy without relying on a badge glyph whose
+  // width the terminal and the layout might disagree about.
+  const sectionHeader = (name: string, note: string | null) => {
+    if (rowsLeft <= 0) {
+      clippedRows++;
+      return;
+    }
+    rowsLeft--;
+    const label = truncate(name, Math.max(1, inner - 4));
+    const suffix = note ? ` ${note}` : "";
+    emit(d, lp, undefined);
+    emit(d, "│", { fg: C.frame });
+    emit(d, "  ", undefined);
+    emit(d, label, { fg: C.title, bold: true });
+    const noteText = truncate(
+      suffix,
+      Math.max(0, inner - 2 - visualWidth(label)),
+    );
+    emit(d, noteText, { fg: C.muted });
+    const consumed = 2 + visualWidth(label) + visualWidth(noteText);
+    let painted = consumed;
+    if (inner - consumed >= 3) {
+      emit(d, " ", undefined);
+      emit(d, "─".repeat(inner - consumed - 2), { fg: C.frame });
+      emit(d, " ", undefined);
+      painted = inner;
+    }
+    emit(d, " ".repeat(Math.max(0, inner - painted)), undefined);
+    emit(d, "│", { fg: C.frame });
+    newline(d);
+  };
+
+  const renderSection = (name: string, note: string | null, body: Draw) => {
+    sectionHeader(name, note);
+    const bodyLines = body.text.split("\n");
+    let cursor = 0;
+    for (let lineIdx = 0; lineIdx < bodyLines.length; lineIdx++) {
+      const ln = bodyLines[lineIdx];
+      if (ln.length === 0 && cursor + ln.length + 1 >= body.text.length) break;
+      // Slice the body's spans that fall inside this line's byte range.
+      const lineStart = cursor;
+      const lineEnd = cursor + utf8Len(ln);
+      const sliced: Span[] = body.spans
+        .filter((sp) => sp.start >= lineStart && sp.end <= lineEnd + 1)
+        .map((sp) => ({
+          start: sp.start - lineStart,
+          end: sp.end - lineStart,
+          fg: sp.fg,
+          bold: sp.bold,
+          underline: sp.underline,
+          url: sp.url,
+        }));
+      // Propagate the section-level row action (keyed by section-body
+      // line index) onto the outer frame row we're about to write.
+      row({ text: ln, spans: sliced }, body.rowActions.get(lineIdx));
+      cursor = lineEnd + 1;
+    }
     if (rowsLeft > 0) {
-        blankInner();
-        rowsLeft--;
+      blankInner();
+      rowsLeft--;
     }
+  };
 
-    // Every body row goes through here, so clipping is central: a section
-    // emitting a 200-column line cannot push the right border out, and its
-    // click targets are clamped to the cells that survived the clip.
-    const row = (
-        body: { text: string; spans: Span[] },
-        ranges?: ClickActionRange[],
-    ) => {
-        if (rowsLeft <= 0) {
-            clippedRows++;
-            return;
-        }
-        rowsLeft--;
-        emit(d, lp, undefined);
-        emit(d, "│", { fg: C.frame });
-        // body is already one line (no embedded newlines) — renderSection
-        // slices multi-line section output before calling row().
-        const line = truncate(body.text, inner);
-        const lineBytes = utf8Len(line);
-        const used = visualWidth(line);
-        const startInDoc = utf8Len(d.text);
-        // Content starts in the outer draw at this visual column —
-        // section-body ranges are offset by it below so clicks hit
-        // the same cells the text actually lives in.
-        const contentStartCol = d.currentCol;
-        d.text += line;
-        d.currentCol += used;
-        for (const sp of body.spans) {
-            if (sp.start < lineBytes) {
-                d.spans.push({
-                    start: startInDoc + sp.start,
-                    end: startInDoc + Math.min(sp.end, lineBytes),
-                    fg: sp.fg,
-                    bold: sp.bold,
-                    underline: sp.underline,
-                    url: sp.url,
-                });
-            }
-        }
-        if (ranges && ranges.length > 0) {
-            // Clamp to the clipped text: a target hanging off the right edge
-            // would highlight (and accept clicks on) the border cell.
-            const shifted: ClickActionRange[] = [];
-            for (const r of ranges) {
-                const colStart = Math.min(r.colStart, used);
-                const colEnd = Math.min(r.colEnd, used);
-                if (colEnd <= colStart) continue;
-                shifted.push({
-                    colStart: colStart + contentStartCol,
-                    colEnd: colEnd + contentStartCol,
-                    action: r.action,
-                });
-            }
-            if (shifted.length > 0) {
-                const existing = d.rowActions.get(d.currentRow) ?? [];
-                d.rowActions.set(d.currentRow, existing.concat(shifted));
-            }
-        }
-        emit(d, " ".repeat(Math.max(0, inner - used)), undefined);
-        emit(d, "│", { fg: C.frame });
-        newline(d);
-    };
+  for (const entry of registeredSections) {
+    renderSection(entry.name.toUpperCase(), sectionNote(entry), entry.draw);
+  }
 
-    const plainRow = (text: string, fg: string) => {
-        row({ text, spans: [{ start: 0, end: utf8Len(text), fg }] });
-    };
+  // Tell the user what the row budget swallowed rather than silently
+  // truncating. Costs one of the reserved rows.
+  if (clippedRows > 0) {
+    rowsLeft = 1;
+    plainRow(
+      `  ${clippedRows} more row${clippedRows === 1 ? "" : "s"} — resize to see`,
+      C.muted,
+    );
+  }
 
-    // Section heading: name in caps followed by a dim rule out to the right
-    // edge. A rule reads as hierarchy without relying on a badge glyph whose
-    // width the terminal and the layout might disagree about.
-    const sectionHeader = (name: string, note: string | null) => {
-        if (rowsLeft <= 0) {
-            clippedRows++;
-            return;
-        }
-        rowsLeft--;
-        const label = truncate(name, Math.max(1, inner - 4));
-        const suffix = note ? ` ${note}` : "";
-        emit(d, lp, undefined);
-        emit(d, "│", { fg: C.frame });
-        emit(d, "  ", undefined);
-        emit(d, label, { fg: C.title, bold: true });
-        const noteText = truncate(
-            suffix,
-            Math.max(0, inner - 2 - visualWidth(label)),
-        );
-        emit(d, noteText, { fg: C.muted });
-        const consumed = 2 + visualWidth(label) + visualWidth(noteText);
-        let painted = consumed;
-        if (inner - consumed >= 3) {
-            emit(d, " ", undefined);
-            emit(d, "─".repeat(inner - consumed - 2), { fg: C.frame });
-            emit(d, " ", undefined);
-            painted = inner;
-        }
-        emit(d, " ".repeat(Math.max(0, inner - painted)), undefined);
-        emit(d, "│", { fg: C.frame });
-        newline(d);
-    };
+  // bottom
+  emit(d, lp, undefined);
+  emit(d, "╰" + "─".repeat(inner) + "╯", { fg: C.frame });
+  newline(d);
 
-    const renderSection = (name: string, note: string | null, body: Draw) => {
-        sectionHeader(name, note);
-        const bodyLines = body.text.split("\n");
-        let cursor = 0;
-        for (let lineIdx = 0; lineIdx < bodyLines.length; lineIdx++) {
-            const ln = bodyLines[lineIdx];
-            if (ln.length === 0 && cursor + ln.length + 1 >= body.text.length) break;
-            // Slice the body's spans that fall inside this line's byte range.
-            const lineStart = cursor;
-            const lineEnd = cursor + utf8Len(ln);
-            const sliced: Span[] = body.spans
-                .filter((sp) => sp.start >= lineStart && sp.end <= lineEnd + 1)
-                .map((sp) => ({
-                    start: sp.start - lineStart,
-                    end: sp.end - lineStart,
-                    fg: sp.fg,
-                    bold: sp.bold,
-                    underline: sp.underline,
-                    url: sp.url,
-                }));
-            // Propagate the section-level row action (keyed by section-body
-            // line index) onto the outer frame row we're about to write.
-            row({ text: ln, spans: sliced }, body.rowActions.get(lineIdx));
-            cursor = lineEnd + 1;
-        }
-        if (rowsLeft > 0) {
-            blankInner();
-            rowsLeft--;
-        }
-    };
-
-    for (const entry of registeredSections) {
-        renderSection(entry.name.toUpperCase(), sectionNote(entry), entry.draw);
-    }
-
-    // Tell the user what the row budget swallowed rather than silently
-    // truncating. Costs one of the reserved rows.
-    if (clippedRows > 0) {
-        rowsLeft = 1;
-        plainRow(`  ${clippedRows} more row${clippedRows === 1 ? "" : "s"} — resize to see`, C.muted);
-    }
-
-    // bottom
-    emit(d, lp, undefined);
-    emit(d, "╰" + "─".repeat(inner) + "╯", { fg: C.frame });
-    newline(d);
-
-    return d;
+  return d;
 }
 
 // ── Paint the buffer ───────────────────────────────────────────────────
@@ -874,36 +901,36 @@ function renderFrame(
 // a single line (the renderer never emits a newline inside a styled span)
 // but we clip defensively so a stray cross-line span doesn't misindex.
 function drawToEntries(d: Draw): TextPropertyEntry[] {
-    const entries: TextPropertyEntry[] = [];
-    const lines = d.text.split("\n");
-    let lineByteStart = 0;
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const isLast = i === lines.length - 1;
-        if (isLast && line.length === 0) break; // trailing empty after final \n
-        const lineBytes = utf8Len(line);
-        const lineByteEnd = lineByteStart + lineBytes;
-        const ios: InlineOverlay[] = [];
-        for (const sp of d.spans) {
-            if (sp.end <= lineByteStart) continue;
-            if (sp.start >= lineByteEnd) continue;
-            const s = Math.max(sp.start, lineByteStart) - lineByteStart;
-            const e = Math.min(sp.end, lineByteEnd) - lineByteStart;
-            if (e <= s) continue;
-            const style: Partial<OverlayOptions> = {};
-            if (sp.fg) style.fg = sp.fg;
-            if (sp.bold) style.bold = true;
-            if (sp.underline) style.underline = true;
-            if (sp.url) style.url = sp.url;
-            ios.push({ start: s, end: e, style });
-        }
-        entries.push({
-            text: line + (isLast ? "" : "\n"),
-            inlineOverlays: ios.length > 0 ? ios : undefined,
-        });
-        lineByteStart = lineByteEnd + 1; // account for the \n byte we split on
+  const entries: TextPropertyEntry[] = [];
+  const lines = d.text.split("\n");
+  let lineByteStart = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isLast = i === lines.length - 1;
+    if (isLast && line.length === 0) break; // trailing empty after final \n
+    const lineBytes = utf8Len(line);
+    const lineByteEnd = lineByteStart + lineBytes;
+    const ios: InlineOverlay[] = [];
+    for (const sp of d.spans) {
+      if (sp.end <= lineByteStart) continue;
+      if (sp.start >= lineByteEnd) continue;
+      const s = Math.max(sp.start, lineByteStart) - lineByteStart;
+      const e = Math.min(sp.end, lineByteEnd) - lineByteStart;
+      if (e <= s) continue;
+      const style: Partial<OverlayOptions> = {};
+      if (sp.fg) style.fg = sp.fg;
+      if (sp.bold) style.bold = true;
+      if (sp.underline) style.underline = true;
+      if (sp.url) style.url = sp.url;
+      ios.push({ start: s, end: e, style });
     }
-    return entries;
+    entries.push({
+      text: line + (isLast ? "" : "\n"),
+      inlineOverlays: ios.length > 0 ? ios : undefined,
+    });
+    lineByteStart = lineByteEnd + 1; // account for the \n byte we split on
+  }
+  return entries;
 }
 
 // Track the last viewport dims we painted for, so repeat viewport_changed
@@ -922,146 +949,146 @@ let currentRowActions: Map<number, ClickActionRange[]> = new Map();
 // needs. Walks chars with visualWidth/utf8Len so frame glyphs like
 // `│` (3 bytes, 1 col) and future wide chars stay aligned.
 function visualColToByteOffset(text: string, visualCol: number): number {
-    if (visualCol <= 0) return 0;
-    let col = 0;
-    let bytes = 0;
-    for (const ch of text) {
-        if (col >= visualCol) return bytes;
-        col += visualWidth(ch);
-        bytes += utf8Len(ch);
-    }
-    return bytes;
+  if (visualCol <= 0) return 0;
+  let col = 0;
+  let bytes = 0;
+  for (const ch of text) {
+    if (col >= visualCol) return bytes;
+    col += visualWidth(ch);
+    bytes += utf8Len(ch);
+  }
+  return bytes;
 }
 
 function paint(dims?: { width: number; height: number }) {
-    if (dashboardBufferId === null) return;
-    const bufferId = dashboardBufferId;
-    // Prefer explicit dims (from a viewport_changed event, which ships
-    // the just-resized width/height before the state snapshot catches
-    // up) and fall back to the snapshot. Without this, toggling the
-    // file explorer repaints against the stale pre-toggle width, so
-    // the frame stays anchored at the old position for one tick.
-    const vp = dims ?? editor.getViewport();
-    const width = vp?.width ?? 100;
-    const height = vp?.height ?? 24;
-    const { inner, leftPad } = frameWidth(width);
-    // Sections lay out against this on their next refresh. A resize also
-    // makes every cached draw stale for layout purposes, so the sections
-    // re-run promptly instead of waiting out their TTL with the old width.
-    if (inner !== currentInnerWidth) {
-        currentInnerWidth = inner;
-        for (const entry of registeredSections) {
-            if (entry.drawWidth !== inner) entry.startedAt = 0;
-        }
+  if (dashboardBufferId === null) return;
+  const bufferId = dashboardBufferId;
+  // Prefer explicit dims (from a viewport_changed event, which ships
+  // the just-resized width/height before the state snapshot catches
+  // up) and fall back to the snapshot. Without this, toggling the
+  // file explorer repaints against the stale pre-toggle width, so
+  // the frame stays anchored at the old position for one tick.
+  const vp = dims ?? editor.getViewport();
+  const width = vp?.width ?? 100;
+  const height = vp?.height ?? 24;
+  const { inner, leftPad } = frameWidth(width);
+  // Sections lay out against this on their next refresh. A resize also
+  // makes every cached draw stale for layout purposes, so the sections
+  // re-run promptly instead of waiting out their TTL with the old width.
+  if (inner !== currentInnerWidth) {
+    currentInnerWidth = inner;
+    for (const entry of registeredSections) {
+      if (entry.drawWidth !== inner) entry.startedAt = 0;
     }
-    const drawn = renderFrame(inner, leftPad, frameRowBudget(height));
+  }
+  const drawn = renderFrame(inner, leftPad, frameRowBudget(height));
 
-    // Count newlines in the rendered frame to vertically center it. Pad
-    // above with blank lines; there's no need to pad below since the
-    // virtual buffer's empty trailing rows already render as blank.
-    let frameHeight = 0;
-    for (let i = 0; i < drawn.text.length; i++) {
-        if (drawn.text.charCodeAt(i) === 10) frameHeight++;
+  // Count newlines in the rendered frame to vertically center it. Pad
+  // above with blank lines; there's no need to pad below since the
+  // virtual buffer's empty trailing rows already render as blank.
+  let frameHeight = 0;
+  for (let i = 0; i < drawn.text.length; i++) {
+    if (drawn.text.charCodeAt(i) === 10) frameHeight++;
+  }
+  const topPad = Math.max(0, Math.floor((height - frameHeight) / 2));
+
+  const entries: TextPropertyEntry[] = [];
+  for (let i = 0; i < topPad; i++) entries.push({ text: "\n" });
+  for (const e of drawToEntries(drawn)) entries.push(e);
+  // Pad below the frame so the buffer covers the full viewport height.
+  // Without this, rows past the last frame line render with
+  // `editor.after_eof_bg`, which follows `editor.bg` by default but is a
+  // separate color a theme may shade — that would show up as a
+  // different-colored strip at the bottom of the dashboard.
+  const bottomPad = Math.max(0, height - topPad - frameHeight);
+  for (let i = 0; i < bottomPad; i++) entries.push({ text: "\n" });
+
+  // Translate frame-relative row actions to absolute buffer rows by
+  // shifting by the vertical padding we just prepended. Columns are
+  // absolute already (the frame renderer placed them via currentCol).
+  const abs: Map<number, ClickActionRange[]> = new Map();
+  for (const [row, ranges] of drawn.rowActions) {
+    abs.set(row + topPad, ranges);
+  }
+  currentRowActions = abs;
+
+  // Rebuild the ordered focus targets in visual row order. A row with
+  // multiple ranges collapses into a single target whose highlight
+  // spans the union of its ranges; Enter dispatches the first range's
+  // action, matching the leftmost click target on that row.
+  const targets: ClickTarget[] = [];
+  const sortedRows = [...abs.keys()].sort((a, b) => a - b);
+  for (const row of sortedRows) {
+    const ranges = abs.get(row)!;
+    if (ranges.length === 0) continue;
+    let minCol = ranges[0].colStart;
+    let maxCol = ranges[0].colEnd;
+    for (const r of ranges) {
+      if (r.colStart < minCol) minCol = r.colStart;
+      if (r.colEnd > maxCol) maxCol = r.colEnd;
     }
-    const topPad = Math.max(0, Math.floor((height - frameHeight) / 2));
+    targets.push({
+      bufferRow: row,
+      colStart: minCol,
+      colEnd: maxCol,
+      action: ranges[0].action,
+    });
+  }
+  clickableTargets = targets;
+  if (targets.length === 0) {
+    focusedIndex = 0;
+  } else if (focusedIndex < 0 || focusedIndex >= targets.length) {
+    focusedIndex =
+      ((focusedIndex % targets.length) + targets.length) % targets.length;
+  }
 
-    const entries: TextPropertyEntry[] = [];
-    for (let i = 0; i < topPad; i++) entries.push({ text: "\n" });
-    for (const e of drawToEntries(drawn)) entries.push(e);
-    // Pad below the frame so the buffer covers the full viewport height.
-    // Without this, rows past the last frame line render with
-    // `editor.after_eof_bg`, which follows `editor.bg` by default but is a
-    // separate color a theme may shade — that would show up as a
-    // different-colored strip at the bottom of the dashboard.
-    const bottomPad = Math.max(0, height - topPad - frameHeight);
-    for (let i = 0; i < bottomPad; i++) entries.push({ text: "\n" });
+  // Taken BEFORE the focus highlight goes on top — fullKey captures
+  // everything (including the clock) that ultimately lands in the
+  // virtual buffer. Drives the setVirtualBufferContent skip check,
+  // so the clock still redraws in place every second.
+  const fullKey = JSON.stringify(entries);
+  const fullChanged = fullKey !== lastPaintedFullKey;
+  const focusChanged = focusedIndex !== lastPaintedFocusedIndex;
 
-    // Translate frame-relative row actions to absolute buffer rows by
-    // shifting by the vertical padding we just prepended. Columns are
-    // absolute already (the frame renderer placed them via currentCol).
-    const abs: Map<number, ClickActionRange[]> = new Map();
-    for (const [row, ranges] of drawn.rowActions) {
-        abs.set(row + topPad, ranges);
-    }
-    currentRowActions = abs;
+  // Identical render → short-circuit. Nothing to push to the buffer.
+  if (!fullChanged && !focusChanged) {
+    return;
+  }
 
-    // Rebuild the ordered focus targets in visual row order. A row with
-    // multiple ranges collapses into a single target whose highlight
-    // spans the union of its ranges; Enter dispatches the first range's
-    // action, matching the leftmost click target on that row.
-    const targets: ClickTarget[] = [];
-    const sortedRows = [...abs.keys()].sort((a, b) => a - b);
-    for (const row of sortedRows) {
-        const ranges = abs.get(row)!;
-        if (ranges.length === 0) continue;
-        let minCol = ranges[0].colStart;
-        let maxCol = ranges[0].colEnd;
-        for (const r of ranges) {
-            if (r.colStart < minCol) minCol = r.colStart;
-            if (r.colEnd > maxCol) maxCol = r.colEnd;
-        }
-        targets.push({
-            bufferRow: row,
-            colStart: minCol,
-            colEnd: maxCol,
-            action: ranges[0].action,
+  // Paint the focus highlight by mutating the entry for the focused
+  // row: translate its visual col range into a byte range and push an
+  // inline overlay on top of whatever foreground/underline spans the
+  // frame renderer already added. Using `editor.selection_bg` keeps
+  // the highlight theme-aware — it follows theme switches for free
+  // and matches other selection-style highlights elsewhere in the UI.
+  if (targets.length > 0) {
+    const focus = targets[focusedIndex];
+    const entry = entries[focus.bufferRow];
+    if (entry) {
+      const lineText = entry.text.endsWith("\n")
+        ? entry.text.slice(0, -1)
+        : entry.text;
+      const byteStart = visualColToByteOffset(lineText, focus.colStart);
+      const byteEnd = visualColToByteOffset(lineText, focus.colEnd);
+      if (byteEnd > byteStart) {
+        const overlays: InlineOverlay[] = entry.inlineOverlays
+          ? [...entry.inlineOverlays]
+          : [];
+        overlays.push({
+          start: byteStart,
+          end: byteEnd,
+          style: { bg: "editor.selection_bg" },
         });
+        entry.inlineOverlays = overlays;
+      }
     }
-    clickableTargets = targets;
-    if (targets.length === 0) {
-        focusedIndex = 0;
-    } else if (focusedIndex < 0 || focusedIndex >= targets.length) {
-        focusedIndex =
-            ((focusedIndex % targets.length) + targets.length) % targets.length;
-    }
+  }
 
-    // Taken BEFORE the focus highlight goes on top — fullKey captures
-    // everything (including the clock) that ultimately lands in the
-    // virtual buffer. Drives the setVirtualBufferContent skip check,
-    // so the clock still redraws in place every second.
-    const fullKey = JSON.stringify(entries);
-    const fullChanged = fullKey !== lastPaintedFullKey;
-    const focusChanged = focusedIndex !== lastPaintedFocusedIndex;
-
-    // Identical render → short-circuit. Nothing to push to the buffer.
-    if (!fullChanged && !focusChanged) {
-        return;
-    }
-
-    // Paint the focus highlight by mutating the entry for the focused
-    // row: translate its visual col range into a byte range and push an
-    // inline overlay on top of whatever foreground/underline spans the
-    // frame renderer already added. Using `editor.selection_bg` keeps
-    // the highlight theme-aware — it follows theme switches for free
-    // and matches other selection-style highlights elsewhere in the UI.
-    if (targets.length > 0) {
-        const focus = targets[focusedIndex];
-        const entry = entries[focus.bufferRow];
-        if (entry) {
-            const lineText = entry.text.endsWith("\n")
-                ? entry.text.slice(0, -1)
-                : entry.text;
-            const byteStart = visualColToByteOffset(lineText, focus.colStart);
-            const byteEnd = visualColToByteOffset(lineText, focus.colEnd);
-            if (byteEnd > byteStart) {
-                const overlays: InlineOverlay[] = entry.inlineOverlays
-                    ? [...entry.inlineOverlays]
-                    : [];
-                overlays.push({
-                    start: byteStart,
-                    end: byteEnd,
-                    style: { bg: "editor.selection_bg" },
-                });
-                entry.inlineOverlays = overlays;
-            }
-        }
-    }
-
-    editor.setVirtualBufferContent(bufferId, entries);
-    lastPaintedW = width;
-    lastPaintedH = height;
-    lastPaintedFullKey = fullKey;
-    lastPaintedFocusedIndex = focusedIndex;
+  editor.setVirtualBufferContent(bufferId, entries);
+  lastPaintedW = width;
+  lastPaintedH = height;
+  lastPaintedFullKey = fullKey;
+  lastPaintedFocusedIndex = focusedIndex;
 }
 
 // Open a URL in the user's browser via the platform's "open" helper.
@@ -1069,44 +1096,48 @@ function paint(dims?: { width: number; height: number }) {
 // platform; the other exits immediately with ENOENT and causes no
 // user-visible effect. Fire-and-forget: we don't await.
 function openUrl(url: string) {
-    // spawnProcess returns a ProcessHandle; we intentionally discard it.
-    // The process runs to completion on its own; failures are silent.
-    editor.spawnProcess("xdg-open", [url]);
-    editor.spawnProcess("open", [url]);
+  // spawnProcess returns a ProcessHandle; we intentionally discard it.
+  // The process runs to completion on its own; failures are silent.
+  editor.spawnProcess("xdg-open", [url]);
+  editor.spawnProcess("open", [url]);
 }
 
 function dispatchClickAction(action: ClickAction) {
-    switch (action.kind) {
-        case "open-url":
-            openUrl(action.url);
-            return;
-        case "callback":
-            try {
-                action.fn();
-            } catch (e) {
-                editor.debug(`dashboard click handler threw: ${String(e)}`);
-            }
-            return;
-    }
+  switch (action.kind) {
+    case "open-url":
+      openUrl(action.url);
+      return;
+    case "callback":
+      try {
+        action.fn();
+      } catch (e) {
+        editor.debug(`dashboard click handler threw: ${String(e)}`);
+      }
+      return;
+  }
 }
 
 // ── Data fetchers ──────────────────────────────────────────────────────
 
 async function run(
-    cmd: string,
-    args: string[],
-    cwd: string,
-    timeoutMs: number,
+  cmd: string,
+  args: string[],
+  cwd: string,
+  timeoutMs: number,
 ): Promise<{ stdout: string; stderr: string; ok: boolean }> {
-    const handle = editor.spawnProcess(cmd, args, cwd);
-    const timeout = editor.delay(timeoutMs).then(() => "__timeout__");
-    const res = await Promise.race([(async () => await handle)(), timeout]);
-    if (res === "__timeout__") {
-        await handle.kill();
-        return { stdout: "", stderr: "timed out", ok: false };
-    }
-    const r = res as SpawnResult;
-    return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", ok: r.exit_code === 0 };
+  const handle = editor.spawnProcess(cmd, args, cwd);
+  const timeout = editor.delay(timeoutMs).then(() => "__timeout__");
+  const res = await Promise.race([(async () => await handle)(), timeout]);
+  if (res === "__timeout__") {
+    await handle.kill();
+    return { stdout: "", stderr: "timed out", ok: false };
+  }
+  const r = res as SpawnResult;
+  return {
+    stdout: r.stdout ?? "",
+    stderr: r.stderr ?? "",
+    ok: r.exit_code === 0,
+  };
 }
 
 const trim = (s: string) => s.replace(/\s+$/, "");
@@ -1115,60 +1146,60 @@ const trim = (s: string) => s.replace(/\s+$/, "");
 // the string is shortened. Uses the same visualWidth estimator as the
 // frame renderer so the result fits exactly.
 function truncate(s: string, maxCols: number): string {
-    if (maxCols <= 0) return "";
-    if (visualWidth(s) <= maxCols) return s;
-    let out = "";
-    let w = 0;
-    for (const ch of s) {
-        const cw = visualWidth(ch);
-        if (w + cw > Math.max(0, maxCols - 1)) break;
-        out += ch;
-        w += cw;
-    }
-    return out + "…";
+  if (maxCols <= 0) return "";
+  if (visualWidth(s) <= maxCols) return s;
+  let out = "";
+  let w = 0;
+  for (const ch of s) {
+    const cw = visualWidth(ch);
+    if (w + cw > Math.max(0, maxCols - 1)) break;
+    out += ch;
+    w += cw;
+  }
+  return out + "…";
 }
 
 // Room a `kv` value cell has inside a standard row at the current panel
 // width: the 4-space indent plus the 10-col padded key consume 14 cols.
 // Derived per call rather than from a fixed constant so it tracks resizes.
 function valueMax(): number {
-    return Math.max(8, currentInnerWidth - 14);
+  return Math.max(8, currentInnerWidth - 14);
 }
 
 // ASCII on purpose: block/line-drawing meter glyphs are East-Asian-ambiguous,
 // so a terminal rendering them double-width would break the row alignment the
 // frame depends on.
 function bar(pct: number, width: number): string {
-    const inner = Math.max(0, width - 2);
-    const filled = Math.max(0, Math.min(inner, Math.round((pct / 100) * inner)));
-    return "[" + "#".repeat(filled) + "-".repeat(inner - filled) + "]";
+  const inner = Math.max(0, width - 2);
+  const filled = Math.max(0, Math.min(inner, Math.round((pct / 100) * inner)));
+  return "[" + "#".repeat(filled) + "-".repeat(inner - filled) + "]";
 }
 
 // wttr.in's j1 response shape — only the fields we consume.
 type WttrHour = {
-    time?: string; // "0", "300", …, "2100"
-    tempC?: string;
-    FeelsLikeC?: string;
-    windspeedKmph?: string;
-    humidity?: string;
-    weatherDesc?: { value?: string }[];
+  time?: string; // "0", "300", …, "2100"
+  tempC?: string;
+  FeelsLikeC?: string;
+  windspeedKmph?: string;
+  humidity?: string;
+  weatherDesc?: { value?: string }[];
 };
 type WttrDay = {
-    date?: string;
-    maxtempC?: string;
-    mintempC?: string;
-    hourly?: WttrHour[];
+  date?: string;
+  maxtempC?: string;
+  mintempC?: string;
+  hourly?: WttrHour[];
 };
 type WttrCurrent = {
-    temp_C?: string;
-    FeelsLikeC?: string;
-    windspeedKmph?: string;
-    humidity?: string;
-    weatherDesc?: { value?: string }[];
+  temp_C?: string;
+  FeelsLikeC?: string;
+  windspeedKmph?: string;
+  humidity?: string;
+  weatherDesc?: { value?: string }[];
 };
 type WttrJ1 = {
-    current_condition?: WttrCurrent[];
-    weather?: WttrDay[];
+  current_condition?: WttrCurrent[];
+  weather?: WttrDay[];
 };
 
 // Find the hourly entry whose `time` is closest to `targetHour` (0–23).
@@ -1177,107 +1208,126 @@ type WttrJ1 = {
 // (rather than floor) to avoid showing "morning" weather for 17:00 just
 // because 1500 is numerically smaller.
 function hourlyAt(hours: WttrHour[], targetHour: number): WttrHour | null {
-    let best: WttrHour | null = null;
-    let bestDelta = Infinity;
-    for (const h of hours) {
-        const raw = h.time ?? "";
-        const hh = Math.round((Number(raw) || 0) / 100);
-        const delta = Math.abs(hh - targetHour);
-        if (delta < bestDelta) {
-            best = h;
-            bestDelta = delta;
-        }
+  let best: WttrHour | null = null;
+  let bestDelta = Infinity;
+  for (const h of hours) {
+    const raw = h.time ?? "";
+    const hh = Math.round((Number(raw) || 0) / 100);
+    const delta = Math.abs(hh - targetHour);
+    if (delta < bestDelta) {
+      best = h;
+      bestDelta = delta;
     }
-    return best;
+  }
+  return best;
 }
 
 function formatCurrent(c: WttrCurrent | undefined): string | null {
-    if (!c) return null;
-    const cond = c.weatherDesc?.[0]?.value ?? "";
-    const temp = c.temp_C ? `${c.temp_C}°C` : "";
-    const feels = c.FeelsLikeC && c.FeelsLikeC !== c.temp_C
-        ? `feels ${c.FeelsLikeC}°C` : "";
-    const wind = c.windspeedKmph ? `${c.windspeedKmph} km/h` : "";
-    const hum = c.humidity ? `${c.humidity}%` : "";
-    const s = [cond, temp, feels, wind, hum]
-        .filter((x) => x.length > 0)
-        .join(" · ");
-    return s ? truncate(s, valueMax()) : null;
+  if (!c) return null;
+  const cond = c.weatherDesc?.[0]?.value ?? "";
+  const temp = c.temp_C ? `${c.temp_C}°C` : "";
+  const feels =
+    c.FeelsLikeC && c.FeelsLikeC !== c.temp_C ? `feels ${c.FeelsLikeC}°C` : "";
+  const wind = c.windspeedKmph ? `${c.windspeedKmph} km/h` : "";
+  const hum = c.humidity ? `${c.humidity}%` : "";
+  const s = [cond, temp, feels, wind, hum]
+    .filter((x) => x.length > 0)
+    .join(" · ");
+  return s ? truncate(s, valueMax()) : null;
 }
 
 function formatHour(h: WttrHour | null): string | null {
-    if (!h) return null;
-    const cond = h.weatherDesc?.[0]?.value ?? "";
-    const temp = h.tempC ? `${h.tempC}°C` : "";
-    const feels = h.FeelsLikeC && h.FeelsLikeC !== h.tempC
-        ? `feels ${h.FeelsLikeC}°C` : "";
-    const s = [cond, temp, feels]
-        .filter((x) => x.length > 0)
-        .join(" · ");
-    return s ? truncate(s, valueMax()) : null;
+  if (!h) return null;
+  const cond = h.weatherDesc?.[0]?.value ?? "";
+  const temp = h.tempC ? `${h.tempC}°C` : "";
+  const feels =
+    h.FeelsLikeC && h.FeelsLikeC !== h.tempC ? `feels ${h.FeelsLikeC}°C` : "";
+  const s = [cond, temp, feels].filter((x) => x.length > 0).join(" · ");
+  return s ? truncate(s, valueMax()) : null;
 }
 
 function formatDaySummary(day: WttrDay | undefined): string | null {
-    if (!day) return null;
-    const midday = hourlyAt(day.hourly ?? [], 12);
-    const cond = midday?.weatherDesc?.[0]?.value ?? "";
-    const range = day.mintempC && day.maxtempC
-        ? `${day.mintempC}°..${day.maxtempC}°C`
-        : "";
-    const s = [range, cond].filter((x) => x.length > 0).join(" · ");
-    return s ? truncate(s, valueMax()) : null;
+  if (!day) return null;
+  const midday = hourlyAt(day.hourly ?? [], 12);
+  const cond = midday?.weatherDesc?.[0]?.value ?? "";
+  const range =
+    day.mintempC && day.maxtempC ? `${day.mintempC}°..${day.maxtempC}°C` : "";
+  const s = [range, cond].filter((x) => x.length > 0).join(" · ");
+  return s ? truncate(s, valueMax()) : null;
+}
+
+// Setting information to show up in UI to change weather location.
+editor.defineConfigString?.("weatherLocation", {
+  default: "",
+  description: "Location to base weather information",
+});
+
+// read setting change on next refresh.
+function getWeatherLocation(): string {
+  const cfg = (editor.getPluginConfig() ?? {}) as { weatherLocation?: unknown };
+  return typeof cfg.weatherLocation === "string"
+    ? cfg.weatherLocation.trim()
+    : "";
+}
+
+// Url for weather information with added location information.
+function getWeatherUrl(location: string): string {
+  const path = location
+    ? "/" + encodeURIComponent(location).replace(/%2C/gi, ",")
+    : "/";
+  return `https://wttr.in${path}?format=j1`;
 }
 
 const weatherRefresh: SectionRefresh = async (ctx) => {
-    let stdout: string;
-    let ok: boolean;
-    try {
-        // j1 = full JSON payload (current + 3-day forecast, 3-hour samples).
-        // Larger than the old %-format but gets us everything in one call.
-        const res = await run(
-            "curl",
-            ["-fsS", "--max-time", "5", "https://wttr.in/?format=j1"],
-            "",
-            6000,
-        );
-        stdout = res.stdout;
-        ok = res.ok;
-    } catch {
-        ctx.error("fetch failed");
-        return;
-    }
-    if (!ok || !stdout.trim()) {
-        ctx.error("offline");
-        return;
-    }
-    let parsed: WttrJ1;
-    try {
-        parsed = JSON.parse(stdout) as WttrJ1;
-    } catch {
-        ctx.error("malformed response");
-        return;
-    }
-    const now = formatCurrent(parsed.current_condition?.[0]);
-    // "5pm": nearest 3-hour sample in today's forecast. wttr.in
-    // buckets at 0/3/6/…/21, so 17:00 picks the 18:00 bucket.
-    const todayHours = parsed.weather?.[0]?.hourly ?? [];
-    const evening = formatHour(hourlyAt(todayHours, 17));
-    const tomorrow = formatDaySummary(parsed.weather?.[1]);
-    ctx.kv("now", now ?? "–", now ? "accent" : "muted");
-    if (evening) ctx.kv("5pm", evening, "value");
-    if (tomorrow) ctx.kv("tomorrow", tomorrow, "value");
+  let stdout: string;
+  let ok: boolean;
+  try {
+    // j1 = full JSON payload (current + 3-day forecast, 3-hour samples).
+    // Larger than the old %-format but gets us everything in one call.
+    const res = await run(
+      "curl",
+      ["-fsS", "--max-time", "5", getWeatherUrl(getWeatherLocation())],
+      "",
+      6000,
+    );
+    stdout = res.stdout;
+    ok = res.ok;
+  } catch {
+    ctx.error("fetch failed");
+    return;
+  }
+  if (!ok || !stdout.trim()) {
+    ctx.error("offline");
+    return;
+  }
+  let parsed: WttrJ1;
+  try {
+    parsed = JSON.parse(stdout) as WttrJ1;
+  } catch {
+    ctx.error("malformed response");
+    return;
+  }
+  const now = formatCurrent(parsed.current_condition?.[0]);
+  // "5pm": nearest 3-hour sample in today's forecast. wttr.in
+  // buckets at 0/3/6/…/21, so 17:00 picks the 18:00 bucket.
+  const todayHours = parsed.weather?.[0]?.hourly ?? [];
+  const evening = formatHour(hourlyAt(todayHours, 17));
+  const tomorrow = formatDaySummary(parsed.weather?.[1]);
+  ctx.kv("now", now ?? "–", now ? "accent" : "muted");
+  if (evening) ctx.kv("5pm", evening, "value");
+  if (tomorrow) ctx.kv("tomorrow", tomorrow, "value");
 };
 
 function normalizeRepoUrl(raw: string): string | null {
-    const s = trim(raw);
-    if (!s) return null;
-    // git@github.com:owner/repo(.git)? -> https://github.com/owner/repo
-    const sshMatch = s.match(/^git@([^:]+):(.+?)(\.git)?$/);
-    if (sshMatch) return `https://${sshMatch[1]}/${sshMatch[2]}`;
-    // https://github.com/owner/repo(.git)? -> stripped
-    const httpsMatch = s.match(/^(https?:\/\/[^/]+\/.+?)(\.git)?$/);
-    if (httpsMatch) return httpsMatch[1];
-    return s;
+  const s = trim(raw);
+  if (!s) return null;
+  // git@github.com:owner/repo(.git)? -> https://github.com/owner/repo
+  const sshMatch = s.match(/^git@([^:]+):(.+?)(\.git)?$/);
+  if (sshMatch) return `https://${sshMatch[1]}/${sshMatch[2]}`;
+  // https://github.com/owner/repo(.git)? -> stripped
+  const httpsMatch = s.match(/^(https?:\/\/[^/]+\/.+?)(\.git)?$/);
+  if (httpsMatch) return httpsMatch[1];
+  return s;
 }
 
 // Extract "owner/repo" (GitHub "nwo" — name-with-owner) from a git
@@ -1285,141 +1335,146 @@ function normalizeRepoUrl(raw: string): string | null {
 // fetchGithub can surface a clear reason instead of firing off a query
 // against the wrong repo.
 function parseGithubNwo(raw: string): string | null {
-    const s = trim(raw);
-    if (!s) return null;
-    // git@github.com:owner/repo(.git)?
-    const ssh = s.match(/^git@github\.com:([^/]+)\/([^/]+?)(\.git)?$/i);
-    if (ssh) return `${ssh[1]}/${ssh[2]}`;
-    // https://github.com/owner/repo(.git)? (allow optional user:token@ prefix)
-    const https = s.match(
-        /^https?:\/\/(?:[^@/]*@)?github\.com\/([^/]+)\/([^/]+?)(\.git)?\/?$/i,
-    );
-    if (https) return `${https[1]}/${https[2]}`;
-    return null;
+  const s = trim(raw);
+  if (!s) return null;
+  // git@github.com:owner/repo(.git)?
+  const ssh = s.match(/^git@github\.com:([^/]+)\/([^/]+?)(\.git)?$/i);
+  if (ssh) return `${ssh[1]}/${ssh[2]}`;
+  // https://github.com/owner/repo(.git)? (allow optional user:token@ prefix)
+  const https = s.match(
+    /^https?:\/\/(?:[^@/]*@)?github\.com\/([^/]+)\/([^/]+?)(\.git)?\/?$/i,
+  );
+  if (https) return `${https[1]}/${https[2]}`;
+  return null;
 }
 
 // Parse the two numbers produced by `git rev-list --left-right --count`
 // ("<ahead> <behind>"). Returns null on malformed output.
-function parseLeftRight(stdout: string): { ahead: number; behind: number } | null {
-    const parts = trim(stdout).split(/\s+/);
-    const a = Number(parts[0]);
-    const b = Number(parts[1]);
-    if (isNaN(a) || isNaN(b)) return null;
-    return { ahead: a, behind: b };
+function parseLeftRight(
+  stdout: string,
+): { ahead: number; behind: number } | null {
+  const parts = trim(stdout).split(/\s+/);
+  const a = Number(parts[0]);
+  const b = Number(parts[1]);
+  if (isNaN(a) || isNaN(b)) return null;
+  return { ahead: a, behind: b };
 }
 
 const gitRefresh: SectionRefresh = async (ctx) => {
-    const cwd = editor.getCwd();
-    let branch;
-    let status;
-    let ahead;
-    let remote;
-    try {
-        [branch, status, ahead, remote] = await Promise.all([
-            run("git", ["rev-parse", "--abbrev-ref", "HEAD"], cwd, 3000),
-            run("git", ["status", "--porcelain"], cwd, 3000),
-            run("git", ["rev-list", "--left-right", "--count", "HEAD...@{u}"], cwd, 3000),
-            run("git", ["remote", "get-url", "origin"], cwd, 3000),
-        ]);
-    } catch {
-        ctx.error("git failed");
-        return;
+  const cwd = editor.getCwd();
+  let branch;
+  let status;
+  let ahead;
+  let remote;
+  try {
+    [branch, status, ahead, remote] = await Promise.all([
+      run("git", ["rev-parse", "--abbrev-ref", "HEAD"], cwd, 3000),
+      run("git", ["status", "--porcelain"], cwd, 3000),
+      run(
+        "git",
+        ["rev-list", "--left-right", "--count", "HEAD...@{u}"],
+        cwd,
+        3000,
+      ),
+      run("git", ["remote", "get-url", "origin"], cwd, 3000),
+    ]);
+  } catch {
+    ctx.error("git failed");
+    return;
+  }
+  if (!branch.ok) {
+    ctx.error("not a git repo");
+    return;
+  }
+  const modified = status.stdout
+    .split("\n")
+    .filter((l) => l.trim().length > 0).length;
+  let trackStr = "no upstream";
+  let trackColor: DashboardColor = "muted";
+  if (ahead.ok) {
+    const ab = parseLeftRight(ahead.stdout);
+    if (ab) {
+      trackStr = `+${ab.ahead} ahead  -${ab.behind} behind`;
+      trackColor = ab.ahead > 0 || ab.behind > 0 ? "accent" : "ok";
     }
-    if (!branch.ok) {
-        ctx.error("not a git repo");
-        return;
-    }
-    const modified = status.stdout
-        .split("\n")
-        .filter((l) => l.trim().length > 0).length;
-    let trackStr = "no upstream";
-    let trackColor: DashboardColor = "muted";
-    if (ahead.ok) {
-        const ab = parseLeftRight(ahead.stdout);
+  }
+  const repoUrl = remote.ok ? normalizeRepoUrl(remote.stdout) : null;
+  const branchName = trim(branch.stdout);
+
+  // "vs master" row: commits ahead/behind of master, or main as a
+  // fallback for repos that use it as the default branch. Skipped
+  // when the current branch IS master/main (self-comparison is 0/0
+  // and not interesting), or when neither ref exists.
+  let vsBase: { base: string; ahead: number; behind: number } | null = null;
+  if (branchName !== "master" && branchName !== "main") {
+    for (const base of ["origin/master", "origin/main", "master", "main"]) {
+      const r = await run(
+        "git",
+        ["rev-list", "--left-right", "--count", `HEAD...${base}`],
+        cwd,
+        3000,
+      );
+      if (r.ok) {
+        const ab = parseLeftRight(r.stdout);
         if (ab) {
-            trackStr = `+${ab.ahead} ahead  -${ab.behind} behind`;
-            trackColor = ab.ahead > 0 || ab.behind > 0 ? "accent" : "ok";
+          vsBase = { base: base.replace(/^origin\//, ""), ...ab };
+          break;
         }
+      }
     }
-    const repoUrl = remote.ok ? normalizeRepoUrl(remote.stdout) : null;
-    const branchName = trim(branch.stdout);
+  }
 
-    // "vs master" row: commits ahead/behind of master, or main as a
-    // fallback for repos that use it as the default branch. Skipped
-    // when the current branch IS master/main (self-comparison is 0/0
-    // and not interesting), or when neither ref exists.
-    let vsBase: { base: string; ahead: number; behind: number } | null = null;
-    if (branchName !== "master" && branchName !== "main") {
-        for (const base of ["origin/master", "origin/main", "master", "main"]) {
-            const r = await run(
-                "git",
-                ["rev-list", "--left-right", "--count", `HEAD...${base}`],
-                cwd,
-                3000,
-            );
-            if (r.ok) {
-                const ab = parseLeftRight(r.stdout);
-                if (ab) {
-                    vsBase = { base: base.replace(/^origin\//, ""), ...ab };
-                    break;
-                }
-            }
-        }
-    }
+  // branch — whole row routes clicks to the branch page.
+  const branchBranchUrl = repoUrl
+    ? `${repoUrl}/tree/${encodeURIComponent(branchName)}`
+    : undefined;
+  ctx.text("    " + pad("branch", 10), { color: "muted" });
+  ctx.text(branchName, {
+    color: "branch",
+    url: branchBranchUrl,
+    onClick: branchBranchUrl ? () => openUrl(branchBranchUrl) : undefined,
+  });
+  ctx.newline();
 
-    // branch — whole row routes clicks to the branch page.
-    const branchBranchUrl = repoUrl
-        ? `${repoUrl}/tree/${encodeURIComponent(branchName)}`
-        : undefined;
-    ctx.text("    " + pad("branch", 10), { color: "muted" });
-    ctx.text(branchName, {
-        color: "branch",
-        url: branchBranchUrl,
-        onClick: branchBranchUrl
-            ? () => openUrl(branchBranchUrl)
-            : undefined,
+  // remote URL — displayed in full with scheme so that terminals
+  // that auto-detect URLs (but ignore OSC-8) still recognize it.
+  // The whole row is also click-routable via the mouse_click hook.
+  if (repoUrl) {
+    ctx.text("    " + pad("repo", 10), { color: "muted" });
+    ctx.text(repoUrl, {
+      color: "accent",
+      url: repoUrl,
+      onClick: () => openUrl(repoUrl),
     });
     ctx.newline();
+  }
 
-    // remote URL — displayed in full with scheme so that terminals
-    // that auto-detect URLs (but ignore OSC-8) still recognize it.
-    // The whole row is also click-routable via the mouse_click hook.
-    if (repoUrl) {
-        ctx.text("    " + pad("repo", 10), { color: "muted" });
-        ctx.text(repoUrl, {
-            color: "accent",
-            url: repoUrl,
-            onClick: () => openUrl(repoUrl),
-        });
-        ctx.newline();
-    }
+  ctx.kv("tracking", trackStr, trackColor);
+  if (vsBase) {
+    const label = `vs ${vsBase.base}`;
+    const str = `+${vsBase.ahead} ahead  -${vsBase.behind} behind`;
+    const color: DashboardColor =
+      vsBase.ahead > 0 || vsBase.behind > 0 ? "accent" : "ok";
+    ctx.kv(label, str, color);
+  }
+  ctx.kv(
+    "changes",
+    `${modified} file${modified === 1 ? "" : "s"}`,
+    modified > 0 ? "warn" : "muted",
+  );
 
-    ctx.kv("tracking", trackStr, trackColor);
-    if (vsBase) {
-        const label = `vs ${vsBase.base}`;
-        const str = `+${vsBase.ahead} ahead  -${vsBase.behind} behind`;
-        const color: DashboardColor =
-            vsBase.ahead > 0 || vsBase.behind > 0 ? "accent" : "ok";
-        ctx.kv(label, str, color);
-    }
-    ctx.kv(
-        "changes",
-        `${modified} file${modified === 1 ? "" : "s"}`,
-        modified > 0 ? "warn" : "muted",
-    );
-
-    // Clickable "branch log" action. Triggers the audit_mode
-    // plugin's `start_branch_log` handler via the plugin-action
-    // bridge — executeAction falls through to Action::PluginAction
-    // for any name that's not a built-in, and the plugin manager
-    // dispatches that to the registered handler by name.
-    ctx.text("    " + pad("log", 10), { color: "muted" });
-    ctx.text("branch log", {
-        color: "accent",
-        bold: true,
-        onClick: () => editor.executeAction("start_branch_log"),
-    });
-    ctx.newline();
+  // Clickable "branch log" action. Triggers the audit_mode
+  // plugin's `start_branch_log` handler via the plugin-action
+  // bridge — executeAction falls through to Action::PluginAction
+  // for any name that's not a built-in, and the plugin manager
+  // dispatches that to the registered handler by name.
+  ctx.text("    " + pad("log", 10), { color: "muted" });
+  ctx.text("branch log", {
+    color: "accent",
+    bold: true,
+    onClick: () => editor.executeAction("start_branch_log"),
+  });
+  ctx.newline();
 };
 
 // PR row types — module-level so the last-good state can reference them.
@@ -1428,12 +1483,12 @@ type GhCommit = { statusCheckRollup?: GhRollup };
 type GhCommitNode = { commit?: GhCommit };
 type GhThread = { isResolved?: boolean; comments?: { totalCount?: number } };
 type GhPR = {
-    number?: number;
-    title?: string;
-    state?: string;
-    repository?: { nameWithOwner?: string };
-    commits?: { nodes?: GhCommitNode[] };
-    reviewThreads?: { nodes?: GhThread[] };
+  number?: number;
+  title?: string;
+  state?: string;
+  repository?: { nameWithOwner?: string };
+  commits?: { nodes?: GhCommitNode[] };
+  reviewThreads?: { nodes?: GhThread[] };
 };
 
 // Last-known-good GitHub state, preserved across refresh failures so
@@ -1453,118 +1508,116 @@ const PR_COL_CHECK = 5;
 const PR_COL_CMTS = 6;
 
 function renderPrRows(ctx: DashboardContext, prs: GhPR[]) {
-    if (prs.length === 0) {
-        ctx.kv("PRs", "no open PRs", "muted");
-        return;
-    }
-    ctx.kv("PRs", `${prs.length} open`, "number");
-    for (const pr of prs) {
-        const state = (pr.state ?? "").toUpperCase();
-        const stateTag =
-            state === "OPEN"
-                ? "open"
-                : state === "MERGED"
-                    ? "mrgd"
-                    : state === "CLOSED"
-                        ? "clsd"
-                        : "???";
-        const stateColor: DashboardColor =
-            state === "OPEN"
-                ? "ok"
-                : state === "MERGED"
-                    ? "accent"
-                    : "muted";
+  if (prs.length === 0) {
+    ctx.kv("PRs", "no open PRs", "muted");
+    return;
+  }
+  ctx.kv("PRs", `${prs.length} open`, "number");
+  for (const pr of prs) {
+    const state = (pr.state ?? "").toUpperCase();
+    const stateTag =
+      state === "OPEN"
+        ? "open"
+        : state === "MERGED"
+          ? "mrgd"
+          : state === "CLOSED"
+            ? "clsd"
+            : "???";
+    const stateColor: DashboardColor =
+      state === "OPEN" ? "ok" : state === "MERGED" ? "accent" : "muted";
 
-        const rollup = pr.commits?.nodes?.[0]?.commit?.statusCheckRollup?.state ?? null;
-        const checkTag =
-            rollup === "SUCCESS"
-                ? "pass"
-                : rollup === "FAILURE" || rollup === "ERROR"
-                    ? "fail"
-                    : rollup === "PENDING" || rollup === "EXPECTED"
-                        ? "run"
-                        : "-";
-        const checkColor: DashboardColor =
-            rollup === "SUCCESS"
-                ? "ok"
-                : rollup === "FAILURE" || rollup === "ERROR"
-                    ? "err"
-                    : rollup === "PENDING" || rollup === "EXPECTED"
-                        ? "warn"
-                        : "muted";
+    const rollup =
+      pr.commits?.nodes?.[0]?.commit?.statusCheckRollup?.state ?? null;
+    const checkTag =
+      rollup === "SUCCESS"
+        ? "pass"
+        : rollup === "FAILURE" || rollup === "ERROR"
+          ? "fail"
+          : rollup === "PENDING" || rollup === "EXPECTED"
+            ? "run"
+            : "-";
+    const checkColor: DashboardColor =
+      rollup === "SUCCESS"
+        ? "ok"
+        : rollup === "FAILURE" || rollup === "ERROR"
+          ? "err"
+          : rollup === "PENDING" || rollup === "EXPECTED"
+            ? "warn"
+            : "muted";
 
-        const threads = pr.reviewThreads?.nodes ?? [];
-        const openCmts = threads
-            .filter((t) => t.isResolved === false)
-            .reduce((acc, t) => acc + (t.comments?.totalCount ?? 0), 0);
+    const threads = pr.reviewThreads?.nodes ?? [];
+    const openCmts = threads
+      .filter((t) => t.isResolved === false)
+      .reduce((acc, t) => acc + (t.comments?.totalCount ?? 0), 0);
 
-        const num = `#${pr.number ?? "?"}`;
-        const title = pr.title ?? "";
-        const repoName = pr.repository?.nameWithOwner ?? "";
-        const prUrl =
-            repoName && pr.number
-                ? `https://github.com/${repoName}/pull/${pr.number}`
-                : undefined;
+    const num = `#${pr.number ?? "?"}`;
+    const title = pr.title ?? "";
+    const repoName = pr.repository?.nameWithOwner ?? "";
+    const prUrl =
+      repoName && pr.number
+        ? `https://github.com/${repoName}/pull/${pr.number}`
+        : undefined;
 
-        // Whole PR row routes clicks to prUrl (set once on the first
-        // action-bearing emit — subsequent emits on the same row would
-        // overwrite with the same value). Emit the number text and
-        // its padding in two separate spans so the underline (added
-        // to clickable spans by `emit`) lands on the "#1234" text
-        // only — trailing padding spaces stay plain.
-        const onClickPr = prUrl ? () => openUrl(prUrl) : undefined;
-        // Fixed cells first, then the title takes whatever is left — so the
-        // status columns stay aligned and only the title gives ground.
-        const fixed = 4 + PR_COL_NUM + PR_COL_STATE + 1 + PR_COL_CHECK + PR_COL_CMTS + 1;
-        ctx.columns([
-            { text: "", width: 4 },
-            {
-                text: num,
-                width: PR_COL_NUM,
-                color: "number",
-                url: prUrl,
-                onClick: onClickPr,
-            },
-            { text: stateTag, width: PR_COL_STATE, color: stateColor, bold: true },
-            { text: "", width: 1 },
-            { text: checkTag, width: PR_COL_CHECK, color: checkColor, bold: true },
-            {
-                text: openCmts > 0 ? `${openCmts} cmt` : "",
-                width: PR_COL_CMTS,
-                color: openCmts > 0 ? "warn" : "muted",
-            },
-            { text: "", width: 1 },
-            {
-                text: title,
-                width: Math.max(4, ctx.width - fixed),
-                color: "value",
-                url: prUrl,
-                onClick: onClickPr,
-            },
-        ]);
-    }
+    // Whole PR row routes clicks to prUrl (set once on the first
+    // action-bearing emit — subsequent emits on the same row would
+    // overwrite with the same value). Emit the number text and
+    // its padding in two separate spans so the underline (added
+    // to clickable spans by `emit`) lands on the "#1234" text
+    // only — trailing padding spaces stay plain.
+    const onClickPr = prUrl ? () => openUrl(prUrl) : undefined;
+    // Fixed cells first, then the title takes whatever is left — so the
+    // status columns stay aligned and only the title gives ground.
+    const fixed =
+      4 + PR_COL_NUM + PR_COL_STATE + 1 + PR_COL_CHECK + PR_COL_CMTS + 1;
+    ctx.columns([
+      { text: "", width: 4 },
+      {
+        text: num,
+        width: PR_COL_NUM,
+        color: "number",
+        url: prUrl,
+        onClick: onClickPr,
+      },
+      { text: stateTag, width: PR_COL_STATE, color: stateColor, bold: true },
+      { text: "", width: 1 },
+      { text: checkTag, width: PR_COL_CHECK, color: checkColor, bold: true },
+      {
+        text: openCmts > 0 ? `${openCmts} cmt` : "",
+        width: PR_COL_CMTS,
+        color: openCmts > 0 ? "warn" : "muted",
+      },
+      { text: "", width: 1 },
+      {
+        text: title,
+        width: Math.max(4, ctx.width - fixed),
+        color: "value",
+        url: prUrl,
+        onClick: onClickPr,
+      },
+    ]);
+  }
 }
 
 function drawGithubState(ctx: DashboardContext) {
-    // Stale-data banner: when we have previously-good PRs AND the
-    // latest refresh failed, show both. Keeps the rest of the
-    // section anchored — no row-count jumps between ticks.
-    if (githubLastError && githubLastPrs !== null) {
-        ctx.text("    " + pad("update", 10), { color: "muted" });
-        ctx.text(`failed — ${githubLastError}`, { color: "err" });
-        ctx.newline();
-        renderPrRows(ctx, githubLastPrs);
-        return;
-    }
-    if (githubLastPrs !== null) {
-        renderPrRows(ctx, githubLastPrs);
-        return;
-    }
-    if (githubLastError) {
-        ctx.error(githubLastError);
-        return;
-    }
-    ctx.kv("status", "loading…", "muted");
+  // Stale-data banner: when we have previously-good PRs AND the
+  // latest refresh failed, show both. Keeps the rest of the
+  // section anchored — no row-count jumps between ticks.
+  if (githubLastError && githubLastPrs !== null) {
+    ctx.text("    " + pad("update", 10), { color: "muted" });
+    ctx.text(`failed — ${githubLastError}`, { color: "err" });
+    ctx.newline();
+    renderPrRows(ctx, githubLastPrs);
+    return;
+  }
+  if (githubLastPrs !== null) {
+    renderPrRows(ctx, githubLastPrs);
+    return;
+  }
+  if (githubLastError) {
+    ctx.error(githubLastError);
+    return;
+  }
+  ctx.kv("status", "loading…", "muted");
 }
 
 // Detect the GitHub owner/repo for the working directory. Returns
@@ -1572,40 +1625,40 @@ function drawGithubState(ctx: DashboardContext) {
 // determine one — fetchGithub renders that reason in the UI instead of
 // fetching PRs against the wrong repo.
 async function detectGithubNwo(
-    cwd: string,
+  cwd: string,
 ): Promise<{ nwo: string } | { err: string }> {
-    const inside = await run(
-        "git",
-        ["rev-parse", "--is-inside-work-tree"],
-        cwd,
-        3000,
-    );
-    if (!inside.ok) return { err: "not a git repo" };
-    const remote = await run("git", ["remote", "get-url", "origin"], cwd, 3000);
-    if (!remote.ok) return { err: "no git remote" };
-    const nwo = parseGithubNwo(remote.stdout);
-    if (!nwo) return { err: "not a github repo" };
-    return { nwo };
+  const inside = await run(
+    "git",
+    ["rev-parse", "--is-inside-work-tree"],
+    cwd,
+    3000,
+  );
+  if (!inside.ok) return { err: "not a git repo" };
+  const remote = await run("git", ["remote", "get-url", "origin"], cwd, 3000);
+  if (!remote.ok) return { err: "no git remote" };
+  const nwo = parseGithubNwo(remote.stdout);
+  if (!nwo) return { err: "not a github repo" };
+  return { nwo };
 }
 
 const githubRefresh: SectionRefresh = async (ctx) => {
-    const cwd = editor.getCwd();
-    const detected = await detectGithubNwo(cwd);
-    if ("err" in detected) {
-        githubLastPrs = null;
-        githubLastError = detected.err;
-        drawGithubState(ctx);
-        return;
-    }
-    const nwo = detected.nwo;
-    // Recent PRs in THIS repo. One GraphQL round-trip fetches state
-    // (OPEN / MERGED / CLOSED), combined check status from the tip
-    // commit's rollup, and the list of review threads so we can count
-    // *unresolved* comment threads per PR. `$owner`/`$name` are passed
-    // as variables so the nwo is not interpolated into the query
-    // string.
-    const [owner, name] = nwo.split("/");
-    const query = `
+  const cwd = editor.getCwd();
+  const detected = await detectGithubNwo(cwd);
+  if ("err" in detected) {
+    githubLastPrs = null;
+    githubLastError = detected.err;
+    drawGithubState(ctx);
+    return;
+  }
+  const nwo = detected.nwo;
+  // Recent PRs in THIS repo. One GraphQL round-trip fetches state
+  // (OPEN / MERGED / CLOSED), combined check status from the tip
+  // commit's rollup, and the list of review threads so we can count
+  // *unresolved* comment threads per PR. `$owner`/`$name` are passed
+  // as variables so the nwo is not interpolated into the query
+  // string.
+  const [owner, name] = nwo.split("/");
+  const query = `
         query($owner: String!, $name: String!) {
             repository(owner: $owner, name: $name) {
                 pullRequests(first: 6, states: [OPEN], orderBy: {field: UPDATED_AT, direction: DESC}) {
@@ -1632,99 +1685,99 @@ const githubRefresh: SectionRefresh = async (ctx) => {
             }
         }
     `;
-    let failure: string | null = null;
-    try {
-        const res = await run(
-            "gh",
-            [
-                "api",
-                "graphql",
-                "-f",
-                `query=${query}`,
-                "-F",
-                `owner=${owner}`,
-                "-F",
-                `name=${name}`,
-            ],
-            "",
-            7000,
-        );
-        if (!res.ok) {
-            const stderr = res.stderr.toLowerCase();
-            failure =
-                stderr.includes("not found") || stderr.includes("no such file")
-                    ? "gh not installed"
-                    : stderr.includes("auth")
-                        ? "gh not authenticated"
-                        : trim(res.stderr).split("\n")[0]?.slice(0, 40) || "gh failed";
-        } else {
-            try {
-                const parsed = JSON.parse(res.stdout);
-                const prs: GhPR[] =
-                    (
-                        parsed as {
-                            data?: {
-                                repository?: { pullRequests?: { nodes?: GhPR[] } };
-                            };
-                        }
-                    )?.data?.repository?.pullRequests?.nodes ?? [];
-                githubLastPrs = prs;
-                githubLastError = null;
-            } catch {
-                failure = "malformed response";
+  let failure: string | null = null;
+  try {
+    const res = await run(
+      "gh",
+      [
+        "api",
+        "graphql",
+        "-f",
+        `query=${query}`,
+        "-F",
+        `owner=${owner}`,
+        "-F",
+        `name=${name}`,
+      ],
+      "",
+      7000,
+    );
+    if (!res.ok) {
+      const stderr = res.stderr.toLowerCase();
+      failure =
+        stderr.includes("not found") || stderr.includes("no such file")
+          ? "gh not installed"
+          : stderr.includes("auth")
+            ? "gh not authenticated"
+            : trim(res.stderr).split("\n")[0]?.slice(0, 40) || "gh failed";
+    } else {
+      try {
+        const parsed = JSON.parse(res.stdout);
+        const prs: GhPR[] =
+          (
+            parsed as {
+              data?: {
+                repository?: { pullRequests?: { nodes?: GhPR[] } };
+              };
             }
-        }
-    } catch {
-        failure = "gh failed";
+          )?.data?.repository?.pullRequests?.nodes ?? [];
+        githubLastPrs = prs;
+        githubLastError = null;
+      } catch {
+        failure = "malformed response";
+      }
     }
-    if (failure !== null) githubLastError = failure;
-    drawGithubState(ctx);
+  } catch {
+    failure = "gh failed";
+  }
+  if (failure !== null) githubLastError = failure;
+  drawGithubState(ctx);
 };
 
 const diskRefresh: SectionRefresh = async (ctx) => {
-    const mounts = ["/", editor.getEnv("HOME") ?? "/home"];
-    const seen = new Set<string>();
-    const rows: { mount: string; pct: number; used: string; size: string }[] = [];
-    try {
-        for (const m of mounts) {
-            const { stdout, ok } = await run("df", ["-hP", m], "", 3000);
-            if (!ok) continue;
-            const lns = stdout.split("\n").filter((l) => l.length > 0);
-            if (lns.length < 2) continue;
-            const cols = lns[1].split(/\s+/);
-            if (cols.length < 6) continue;
-            const mount = cols[5];
-            if (seen.has(mount)) continue;
-            seen.add(mount);
-            rows.push({
-                mount,
-                pct: Number(cols[4].replace("%", "")) || 0,
-                used: cols[2],
-                size: cols[1],
-            });
-        }
-    } catch {
-        ctx.error("df failed");
-        return;
+  const mounts = ["/", editor.getEnv("HOME") ?? "/home"];
+  const seen = new Set<string>();
+  const rows: { mount: string; pct: number; used: string; size: string }[] = [];
+  try {
+    for (const m of mounts) {
+      const { stdout, ok } = await run("df", ["-hP", m], "", 3000);
+      if (!ok) continue;
+      const lns = stdout.split("\n").filter((l) => l.length > 0);
+      if (lns.length < 2) continue;
+      const cols = lns[1].split(/\s+/);
+      if (cols.length < 6) continue;
+      const mount = cols[5];
+      if (seen.has(mount)) continue;
+      seen.add(mount);
+      rows.push({
+        mount,
+        pct: Number(cols[4].replace("%", "")) || 0,
+        used: cols[2],
+        size: cols[1],
+      });
     }
-    if (rows.length === 0) {
-        ctx.error("df failed");
-        return;
-    }
-    // Meter width scales with the panel: it is the elastic column, and the
-    // fixed cells around it must keep their room at any size.
-    const meter = Math.max(6, Math.min(24, ctx.width - 34));
-    for (const row of rows) {
-        const color: DashboardColor =
-            row.pct >= 90 ? "err" : row.pct >= 75 ? "warn" : "ok";
-        ctx.columns([
-            { text: "", width: 4 },
-            { text: row.mount, width: 10, color: "muted" },
-            { text: bar(row.pct, meter), width: meter, color, bold: true },
-            { text: `${row.pct}%`, width: 6, align: "right", color },
-            { text: `  ${row.used} / ${row.size}`, color: "muted" },
-        ]);
-    }
+  } catch {
+    ctx.error("df failed");
+    return;
+  }
+  if (rows.length === 0) {
+    ctx.error("df failed");
+    return;
+  }
+  // Meter width scales with the panel: it is the elastic column, and the
+  // fixed cells around it must keep their room at any size.
+  const meter = Math.max(6, Math.min(24, ctx.width - 34));
+  for (const row of rows) {
+    const color: DashboardColor =
+      row.pct >= 90 ? "err" : row.pct >= 75 ? "warn" : "ok";
+    ctx.columns([
+      { text: "", width: 4 },
+      { text: row.mount, width: 10, color: "muted" },
+      { text: bar(row.pct, meter), width: meter, color, bold: true },
+      { text: `${row.pct}%`, width: 6, align: "right", color },
+      { text: `  ${row.used} / ${row.size}`, color: "muted" },
+    ]);
+  }
 };
 
 // ── Lifecycle ──────────────────────────────────────────────────────────
@@ -1742,26 +1795,26 @@ const diskRefresh: SectionRefresh = async (ctx) => {
 const TICK_MS = 1000;
 
 async function refreshLoop(myBufferId: number) {
-    let lastClock = clockNow();
-    while (dashboardBufferId === myBufferId) {
-        await editor.delay(TICK_MS);
-        if (dashboardBufferId !== myBufferId) return;
-        const now = Date.now();
-        const tok = fetchToken;
-        let started = 0;
-        for (const entry of registeredSections) {
-            if (entry.inFlight) continue;
-            if (now - entry.startedAt < entry.ttlMs) continue;
-            started++;
-            void refreshSection(entry, tok);
-        }
-        // Repaint on a clock change; a landing refresh paints itself.
-        const clock = clockNow();
-        if (clock !== lastClock) {
-            lastClock = clock;
-            if (started === 0) paint();
-        }
+  let lastClock = clockNow();
+  while (dashboardBufferId === myBufferId) {
+    await editor.delay(TICK_MS);
+    if (dashboardBufferId !== myBufferId) return;
+    const now = Date.now();
+    const tok = fetchToken;
+    let started = 0;
+    for (const entry of registeredSections) {
+      if (entry.inFlight) continue;
+      if (now - entry.startedAt < entry.ttlMs) continue;
+      started++;
+      void refreshSection(entry, tok);
     }
+    // Repaint on a clock change; a landing refresh paints itself.
+    const clock = clockNow();
+    if (clock !== lastClock) {
+      lastClock = clock;
+      if (started === 0) paint();
+    }
+  }
 }
 
 // Set for the duration of an in-flight openDashboard call. The
@@ -1777,91 +1830,93 @@ let dashboardOpening = false;
 // on real files, whether to sweep untitled scratch) live in the
 // callers.
 function bootstrapDashboard(bufferId: number) {
-    // Kick a refresh for each registered section. Token guards against late
-    // resolvers from a prior open clobbering the new one.
-    //
-    // Stale-while-revalidate on reopen: a section that has data keeps showing
-    // it (marked stale) rather than reverting to "loading…", so a re-opened
-    // dashboard draws real content on its first frame. Only sections that
-    // never landed start from the placeholder.
-    //
-    // GitHub's section callback reuses the last-good PR snapshot (if
-    // any) on its first call post-open so a re-opened dashboard can
-    // draw real data on the first frame while the refresh round-trip
-    // is still in flight.
-    fetchToken++;
-    const myToken = fetchToken;
-    // Paint once first so `currentInnerWidth` reflects the real panel before
-    // any section lays itself out against it.
-    paint();
-    for (const entry of registeredSections) {
-        if (!entry.everLanded) entry.draw = loadingDraw();
-        entry.startedAt = 0;
-        void refreshSection(entry, myToken);
-    }
-    paint();
+  // Kick a refresh for each registered section. Token guards against late
+  // resolvers from a prior open clobbering the new one.
+  //
+  // Stale-while-revalidate on reopen: a section that has data keeps showing
+  // it (marked stale) rather than reverting to "loading…", so a re-opened
+  // dashboard draws real content on its first frame. Only sections that
+  // never landed start from the placeholder.
+  //
+  // GitHub's section callback reuses the last-good PR snapshot (if
+  // any) on its first call post-open so a re-opened dashboard can
+  // draw real data on the first frame while the refresh round-trip
+  // is still in flight.
+  fetchToken++;
+  const myToken = fetchToken;
+  // Paint once first so `currentInnerWidth` reflects the real panel before
+  // any section lays itself out against it.
+  paint();
+  for (const entry of registeredSections) {
+    if (!entry.everLanded) entry.draw = loadingDraw();
+    entry.startedAt = 0;
+    void refreshSection(entry, myToken);
+  }
+  paint();
 
-    // Kick off the TTL scheduler. It stops itself when the dashboard is
-    // closed.
-    refreshLoop(bufferId);
+  // Kick off the TTL scheduler. It stops itself when the dashboard is
+  // closed.
+  refreshLoop(bufferId);
 }
 
 async function openDashboard() {
-    if (dashboardBufferId !== null) return; // already open
-    if (dashboardOpening) return; // another openDashboard is mid-await
-    dashboardOpening = true;
+  if (dashboardBufferId !== null) return; // already open
+  if (dashboardOpening) return; // another openDashboard is mid-await
+  dashboardOpening = true;
 
-    const res = await editor.createVirtualBuffer({
-        name: "Dashboard",
-        mode: "dashboard",
-        readOnly: true,
-        showLineNumbers: false,
-        showCursors: false,
-        editingDisabled: true,
-    });
-    dashboardBufferId = res.bufferId;
-    dashboardOpening = false;
-    focusedIndex = 0;
+  const res = await editor.createVirtualBuffer({
+    name: "Dashboard",
+    mode: "dashboard",
+    readOnly: true,
+    showLineNumbers: false,
+    showCursors: false,
+    editingDisabled: true,
+  });
+  dashboardBufferId = res.bufferId;
+  dashboardOpening = false;
+  focusedIndex = 0;
 
-    // Re-check: while we were awaiting createVirtualBuffer, a real
-    // file may have landed — e.g. a CLI file from `fresh my_file`
-    // that was queued before our `ready` handler ran, or a file the
-    // user opened from the explorer. If so, quietly close the buffer
-    // we just created instead of showing it and stealing focus.
-    const realFilesNow = editor.listBuffers().filter(
-        (b) =>
-            !b.is_virtual &&
-            b.path &&
-            b.path.length > 0 &&
-            b.id !== dashboardBufferId,
+  // Re-check: while we were awaiting createVirtualBuffer, a real
+  // file may have landed — e.g. a CLI file from `fresh my_file`
+  // that was queued before our `ready` handler ran, or a file the
+  // user opened from the explorer. If so, quietly close the buffer
+  // we just created instead of showing it and stealing focus.
+  const realFilesNow = editor
+    .listBuffers()
+    .filter(
+      (b) =>
+        !b.is_virtual &&
+        b.path &&
+        b.path.length > 0 &&
+        b.id !== dashboardBufferId,
     );
-    if (realFilesNow.length > 0) {
-        editor.closeBuffer(dashboardBufferId);
-        dashboardBufferId = null;
-        return;
+  if (realFilesNow.length > 0) {
+    editor.closeBuffer(dashboardBufferId);
+    dashboardBufferId = null;
+    return;
+  }
+  editor.showBuffer(dashboardBufferId);
+
+  // Close any untitled scratch left over from the last-tab-closed event
+  // or the initial launch — the dashboard should own the split.
+  for (const b of editor.listBuffers()) {
+    if (
+      !b.is_virtual &&
+      (!b.path || b.path.length === 0) &&
+      b.id !== dashboardBufferId
+    ) {
+      editor.closeBuffer(b.id);
     }
-    editor.showBuffer(dashboardBufferId);
+  }
 
-    // Close any untitled scratch left over from the last-tab-closed event
-    // or the initial launch — the dashboard should own the split.
-    for (const b of editor.listBuffers()) {
-        if (
-            !b.is_virtual &&
-            (!b.path || b.path.length === 0) &&
-            b.id !== dashboardBufferId
-        ) {
-            editor.closeBuffer(b.id);
-        }
-    }
+  // Clear the content/focus keys and dims so the first paint after
+  // open is treated as a content change.
+  lastPaintedFullKey = null;
+  lastPaintedFocusedIndex = -1;
+  lastPaintedW = -1;
+  lastPaintedH = -1;
 
-    // Clear the content/focus keys and dims so the first paint after
-    // open is treated as a content change.
-    lastPaintedFullKey = null;
-    lastPaintedFocusedIndex = -1;
-    lastPaintedW = -1;
-    lastPaintedH = -1;
-
-    bootstrapDashboard(dashboardBufferId);
+  bootstrapDashboard(dashboardBufferId);
 }
 
 // Command-palette handler: show the dashboard if it isn't open, or
@@ -1870,25 +1925,25 @@ async function openDashboard() {
 // — if the user has a file open and types "Show Dashboard", the
 // dashboard opens alongside it rather than replacing it.
 async function dashboardShowOrFocus() {
-    if (dashboardBufferId !== null) {
-        editor.showBuffer(dashboardBufferId);
-        return;
-    }
-    if (dashboardOpening) return;
-    dashboardOpening = true;
-    const res = await editor.createVirtualBuffer({
-        name: "Dashboard",
-        mode: "dashboard",
-        readOnly: true,
-        showLineNumbers: false,
-        showCursors: false,
-        editingDisabled: true,
-    });
-    dashboardBufferId = res.bufferId;
-    dashboardOpening = false;
-    focusedIndex = 0;
+  if (dashboardBufferId !== null) {
     editor.showBuffer(dashboardBufferId);
-    bootstrapDashboard(dashboardBufferId);
+    return;
+  }
+  if (dashboardOpening) return;
+  dashboardOpening = true;
+  const res = await editor.createVirtualBuffer({
+    name: "Dashboard",
+    mode: "dashboard",
+    readOnly: true,
+    showLineNumbers: false,
+    showCursors: false,
+    editingDisabled: true,
+  });
+  dashboardBufferId = res.bufferId;
+  dashboardOpening = false;
+  focusedIndex = 0;
+  editor.showBuffer(dashboardBufferId);
+  bootstrapDashboard(dashboardBufferId);
 }
 registerHandler("dashboardShowOrFocus", dashboardShowOrFocus);
 
@@ -1897,26 +1952,27 @@ registerHandler("dashboardShowOrFocus", dashboardShowOrFocus);
 // comes from the typed plugin-config field declared below. The field
 // shows up in the Settings UI under "Plugin Settings → dashboard".
 editor.defineConfigBoolean("autoOpen", {
-    default: false,
-    description: "Show the dashboard automatically when Fresh starts with no real files open.",
+  default: false,
+  description:
+    "Show the dashboard automatically when Fresh starts with no real files open.",
 });
 
 let autoOpenOverride: boolean | null = null;
 
 function autoOpenEnabled(): boolean {
-    if (autoOpenOverride !== null) return autoOpenOverride;
-    const cfg = (editor.getPluginConfig() ?? {}) as { autoOpen?: boolean };
-    return cfg.autoOpen === true;
+  if (autoOpenOverride !== null) return autoOpenOverride;
+  const cfg = (editor.getPluginConfig() ?? {}) as { autoOpen?: boolean };
+  return cfg.autoOpen === true;
 }
 
 function shouldShowDashboard(): boolean {
-    if (dashboardBufferId !== null) return false;
-    if (!autoOpenEnabled()) return false;
-    const all = editor.listBuffers();
-    const realFiles = all.filter(
-        (b) => !b.is_virtual && b.path && b.path.length > 0,
-    );
-    return realFiles.length === 0;
+  if (dashboardBufferId !== null) return false;
+  if (!autoOpenEnabled()) return false;
+  const all = editor.listBuffers();
+  const realFiles = all.filter(
+    (b) => !b.is_virtual && b.path && b.path.length > 0,
+  );
+  return realFiles.length === 0;
 }
 
 // ── Editor event handlers ─────────────────────────────────────────────
@@ -1926,20 +1982,17 @@ function shouldShowDashboard(): boolean {
 // subscription itself happens at the bottom of the file, once all the
 // handlers below exist.
 registerHandler("dashboardOnReady", async () => {
-    if (shouldShowDashboard()) await openDashboard();
+  if (shouldShowDashboard()) await openDashboard();
 });
-registerHandler(
-    "dashboardOnBufferClosed",
-    async (e: { buffer_id: number }) => {
-        // If the dashboard itself was closed, clear our handle so we'll
-        // re-open on the next "last tab closed" event.
-        if (dashboardBufferId !== null && e.buffer_id === dashboardBufferId) {
-            dashboardBufferId = null;
-            return;
-        }
-        if (shouldShowDashboard()) await openDashboard();
-    },
-);
+registerHandler("dashboardOnBufferClosed", async (e: { buffer_id: number }) => {
+  // If the dashboard itself was closed, clear our handle so we'll
+  // re-open on the next "last tab closed" event.
+  if (dashboardBufferId !== null && e.buffer_id === dashboardBufferId) {
+    dashboardBufferId = null;
+    return;
+  }
+  if (shouldShowDashboard()) await openDashboard();
+});
 // Step aside when a real file opens. This covers two flows:
 //   1. `fresh my_file` at the command line: the file is queued before
 //      the event loop starts, so the dashboard's `ready` handler can
@@ -1950,12 +2003,12 @@ registerHandler(
 //      dashboard is the current tab. Same reasoning: the user asked
 //      for a real buffer, so the dashboard shouldn't linger in front.
 registerHandler(
-    "dashboardOnAfterFileOpen",
-    (_e: { buffer_id: number; path: string }) => {
-        if (dashboardBufferId === null) return;
-        editor.closeBuffer(dashboardBufferId);
-        dashboardBufferId = null;
-    },
+  "dashboardOnAfterFileOpen",
+  (_e: { buffer_id: number; path: string }) => {
+    if (dashboardBufferId === null) return;
+    editor.closeBuffer(dashboardBufferId);
+    dashboardBufferId = null;
+  },
 );
 // viewport_changed fires whenever a split's dimensions change, which
 // covers terminal resize *and* file-explorer toggle (opening the explorer
@@ -1963,16 +2016,16 @@ registerHandler(
 // dedupe against the last-painted dims so scroll-only events (which also
 // fire this hook) don't cause gratuitous repaints.
 registerHandler(
-    "dashboardOnViewportChanged",
-    (data: { buffer_id: number; width: number; height: number }) => {
-        if (dashboardBufferId === null) return;
-        if (data.buffer_id !== dashboardBufferId) return;
-        if (data.width === lastPaintedW && data.height === lastPaintedH) return;
-        // Pass the fresh dims through so we center against the new
-        // split width on this very tick — the getViewport() snapshot
-        // is only updated on the next render pass.
-        paint({ width: data.width, height: data.height });
-    },
+  "dashboardOnViewportChanged",
+  (data: { buffer_id: number; width: number; height: number }) => {
+    if (dashboardBufferId === null) return;
+    if (data.buffer_id !== dashboardBufferId) return;
+    if (data.width === lastPaintedW && data.height === lastPaintedH) return;
+    // Pass the fresh dims through so we center against the new
+    // split width on this very tick — the getViewport() snapshot
+    // is only updated on the next render pass.
+    paint({ width: data.width, height: data.height });
+  },
 );
 // Keyboard navigation. The dashboard buffer is `showCursors: false` +
 // `editingDisabled: true`, so there's no native cursor to drive
@@ -1980,19 +2033,18 @@ registerHandler(
 // to move the highlight. Wraparound in both directions so the user
 // can't walk off either end of the clickable list.
 function moveFocus(delta: number) {
-    if (clickableTargets.length === 0) return;
-    focusedIndex =
-        (focusedIndex + delta + clickableTargets.length) %
-        clickableTargets.length;
-    paint();
+  if (clickableTargets.length === 0) return;
+  focusedIndex =
+    (focusedIndex + delta + clickableTargets.length) % clickableTargets.length;
+  paint();
 }
 registerHandler("dashboardFocusNext", () => moveFocus(1));
 registerHandler("dashboardFocusPrev", () => moveFocus(-1));
 registerHandler("dashboardActivate", () => {
-    if (clickableTargets.length === 0) return;
-    const target = clickableTargets[focusedIndex];
-    if (!target) return;
-    dispatchClickAction(target.action);
+  if (clickableTargets.length === 0) return;
+  const target = clickableTargets[focusedIndex];
+  if (!target) return;
+  dispatchClickAction(target.action);
 });
 
 // Mode bindings mirror the standard "list with selectable rows"
@@ -2002,19 +2054,19 @@ registerHandler("dashboardActivate", () => {
 // or intentionally inert (we don't want j/k falling through to cursor
 // movement commands that would silently do nothing here).
 editor.defineMode(
-    "dashboard",
-    [
-        ["Tab", "dashboardFocusNext"],
-        ["Down", "dashboardFocusNext"],
-        ["j", "dashboardFocusNext"],
-        ["BackTab", "dashboardFocusPrev"],
-        ["Up", "dashboardFocusPrev"],
-        ["k", "dashboardFocusPrev"],
-        ["Return", "dashboardActivate"],
-    ],
-    true, // read-only
-    false, // allow_text_input
-    false, // don't inherit Normal bindings — no cursor to move
+  "dashboard",
+  [
+    ["Tab", "dashboardFocusNext"],
+    ["Down", "dashboardFocusNext"],
+    ["j", "dashboardFocusNext"],
+    ["BackTab", "dashboardFocusPrev"],
+    ["Up", "dashboardFocusPrev"],
+    ["k", "dashboardFocusPrev"],
+    ["Return", "dashboardActivate"],
+  ],
+  true, // read-only
+  false, // allow_text_input
+  false, // don't inherit Normal bindings — no cursor to move
 );
 
 // Dispatch clicks on rows that carry an action. We don't trust the
@@ -2022,41 +2074,41 @@ editor.defineMode(
 // them silently — so every clickable element also registers a
 // row-based ClickAction and we route the click ourselves.
 registerHandler(
-    "dashboardOnMouseClick",
-    (data: {
-        column: number;
-        row: number;
-        button: string;
-        modifiers: string;
-        content_x: number;
-        content_y: number;
-        buffer_id: number | null;
-        buffer_row: number | null;
-        buffer_col: number | null;
-    }) => {
-        if (data.button !== "left") return;
-        if (dashboardBufferId === null) return;
-        if (data.buffer_id !== dashboardBufferId) return;
-        if (data.buffer_row === null) return;
-        const ranges = currentRowActions.get(data.buffer_row);
-        if (!ranges) return;
-        // Gate on the visual column within the buffer's content area.
-        // `buffer_col` is in UTF-8 bytes and doesn't line up with the
-        // frame's multi-byte characters (`│`, `╭` etc.), so we derive
-        // the visual column from `column - content_x` — the screen
-        // column relative to the buffer panel's left edge. Our
-        // registered ranges are stored in visual cells and reset to 0
-        // at each newline, so the two units match. A click outside
-        // every registered range is a no-op: whitespace, kv labels,
-        // and the frame border inside an inner row stay unclickable,
-        // matching the underline-as-affordance contract.
-        const visualCol = data.column - data.content_x;
-        const match = ranges.find(
-            (r) => visualCol >= r.colStart && visualCol < r.colEnd,
-        );
-        if (!match) return;
-        dispatchClickAction(match.action);
-    },
+  "dashboardOnMouseClick",
+  (data: {
+    column: number;
+    row: number;
+    button: string;
+    modifiers: string;
+    content_x: number;
+    content_y: number;
+    buffer_id: number | null;
+    buffer_row: number | null;
+    buffer_col: number | null;
+  }) => {
+    if (data.button !== "left") return;
+    if (dashboardBufferId === null) return;
+    if (data.buffer_id !== dashboardBufferId) return;
+    if (data.buffer_row === null) return;
+    const ranges = currentRowActions.get(data.buffer_row);
+    if (!ranges) return;
+    // Gate on the visual column within the buffer's content area.
+    // `buffer_col` is in UTF-8 bytes and doesn't line up with the
+    // frame's multi-byte characters (`│`, `╭` etc.), so we derive
+    // the visual column from `column - content_x` — the screen
+    // column relative to the buffer panel's left edge. Our
+    // registered ranges are stored in visual cells and reset to 0
+    // at each newline, so the two units match. A click outside
+    // every registered range is a no-op: whitespace, kv labels,
+    // and the frame border inside an inner row stay unclickable,
+    // matching the underline-as-affordance contract.
+    const visualCol = data.column - data.content_x;
+    const match = ranges.find(
+      (r) => visualCol >= r.colStart && visualCol < r.colEnd,
+    );
+    if (!match) return;
+    dispatchClickAction(match.action);
+  },
 );
 
 // Register the built-in sections. They use the same public
@@ -2078,35 +2130,39 @@ registerSection("disk", diskRefresh, { ttlMs: 60_000, timeoutMs: 5_000 });
 // `kv`, `text`, `newline`, and `error` primitives — see the init.ts
 // starter template for an end-to-end example.
 editor.exportPluginApi("dashboard", {
-    registerSection(
-        name: string,
-        refresh: SectionRefresh,
-        options?: SectionOptions,
-    ): () => void {
-        if (typeof name !== "string" || name.length === 0) {
-            throw new Error("dashboard.registerSection: name must be a non-empty string");
-        }
-        if (typeof refresh !== "function") {
-            throw new Error("dashboard.registerSection: refresh must be a function");
-        }
-        return registerSection(name, refresh, options);
-    },
-    removeSection(name: string): boolean {
-        if (typeof name !== "string" || name.length === 0) {
-            throw new Error("dashboard.removeSection: name must be a non-empty string");
-        }
-        return removeSection(name);
-    },
-    clearAllSections(): void {
-        clearAllSections();
-    },
-    setAutoOpen(enabled: boolean): void {
-        autoOpenOverride = !!enabled;
-    },
-    builtinHandlers: {
-        weather: weatherRefresh,
-        github: githubRefresh,
-    },
+  registerSection(
+    name: string,
+    refresh: SectionRefresh,
+    options?: SectionOptions,
+  ): () => void {
+    if (typeof name !== "string" || name.length === 0) {
+      throw new Error(
+        "dashboard.registerSection: name must be a non-empty string",
+      );
+    }
+    if (typeof refresh !== "function") {
+      throw new Error("dashboard.registerSection: refresh must be a function");
+    }
+    return registerSection(name, refresh, options);
+  },
+  removeSection(name: string): boolean {
+    if (typeof name !== "string" || name.length === 0) {
+      throw new Error(
+        "dashboard.removeSection: name must be a non-empty string",
+      );
+    }
+    return removeSection(name);
+  },
+  clearAllSections(): void {
+    clearAllSections();
+  },
+  setAutoOpen(enabled: boolean): void {
+    autoOpenOverride = !!enabled;
+  },
+  builtinHandlers: {
+    weather: weatherRefresh,
+    github: githubRefresh,
+  },
 });
 
 // Subscribe to the hooks that drive the dashboard. Reaching this code
@@ -2131,7 +2187,7 @@ editor.on("after_file_open", "dashboardOnAfterFileOpen");
 // Command-palette entry. No-op when the dashboard is already the
 // focused tab (showBuffer on a visible buffer is a cheap re-focus).
 editor.registerCommand(
-    "Show Dashboard",
-    "Open the dashboard, or bring it to the front if it's already open",
-    "dashboardShowOrFocus",
+  "Show Dashboard",
+  "Open the dashboard, or bring it to the front if it's already open",
+  "dashboardShowOrFocus",
 );
