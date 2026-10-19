@@ -329,8 +329,10 @@ impl Editor {
 
         // Shift-click extends the selection; Ctrl-click too, since some
         // terminals intercept Shift+click.
-        let extend_selection =
-            modifiers.contains(KeyModifiers::SHIFT) || modifiers.contains(KeyModifiers::CONTROL);
+        let extend_selection = modifiers.contains(KeyModifiers::SHIFT);
+
+        // Alt-click adds or removes cursors at point of click.
+        let multi_cursor = modifiers.contains(KeyModifiers::CONTROL) && !extend_selection;
 
         // Calculate clicked position in buffer
         let (toggle_fold_byte, onclick_action, click_target, cursor_snapshot) = if let Some(state) =
@@ -539,6 +541,61 @@ impl Editor {
             if let Some(action) = Action::from_str(&action_name, &empty_args) {
                 return self.handle_action(action);
             }
+            return Ok(());
+        }
+
+        if multi_cursor {
+            let existing: Vec<(CursorId, usize, Option<usize>)> = self
+                .windows
+                .get(&self.active_window)
+                .and_then(|w| w.buffers.splits())
+                .map(|(_, vs)| vs)
+                .expect("active window must have a populated split layout")
+                .get(&split_id)
+                .map(|vs| {
+                    let mut v: Vec<_> = vs
+                        .cursors
+                        .iter()
+                        .map(|(id, c)| (id, c.position, c.anchor))
+                        .collect();
+                    v.sort_by_key(|(id, _, _)| id.0);
+                    v
+                })
+                .unwrap_or_default();
+
+            let event = match existing.iter().find(|(_, pos, _)| *pos == target_position) {
+                // A cursor is already here: remove it, but never the last one.
+                Some(&(cursor_id, position, anchor)) => {
+                    if existing.len() <= 1 {
+                        return Ok(());
+                    }
+                    Event::RemoveCursor {
+                        cursor_id,
+                        position,
+                        anchor,
+                    }
+                }
+                // Empty spot: add a cursor with no selection.
+                None => {
+                    // max+1 rather than len(): after removals the ids have gaps,
+                    // and len() could collide with a surviving id.
+                    let next = existing
+                        .iter()
+                        .map(|(id, _, _)| id.0)
+                        .max()
+                        .map_or(0, |m| m + 1);
+                    Event::AddCursor {
+                        cursor_id: CursorId(next),
+                        position: target_position,
+                        anchor: None,
+                    }
+                }
+            };
+
+            self.active_event_log_mut().append(event.clone());
+            self.apply_event_to_active_buffer(&event);
+            // Return before the drag bookkeeping below, so Alt+drag doesn't extend
+            // a selection from the toggled cursor.
             return Ok(());
         }
 
