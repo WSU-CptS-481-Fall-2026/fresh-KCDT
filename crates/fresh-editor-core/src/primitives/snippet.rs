@@ -35,59 +35,52 @@ pub struct ExpandedSnippet {
 /// ```
 pub fn expand_snippet(snippet: &str) -> ExpandedSnippet {
     let mut result = String::new();
-    let mut cursor_offset: Option<usize> = None;
+    let mut cursor_offset = None;
     let mut chars = snippet.chars().peekable();
 
     while let Some(c) = chars.next() {
-        if c == '\\' {
-            // Escape sequence
-            if let Some(&next) = chars.peek() {
-                if next == '$' || next == '\\' || next == '}' {
-                    result.push(chars.next().unwrap());
-                    continue;
-                }
+        match c {
+            '\\' => {
+                let escaped = chars
+                    .next_if(|next| matches!(*next, '$' | '\\' | '}'))
+                    .unwrap_or(c);
+                result.push(escaped);
             }
-            result.push(c);
-        } else if c == '$' {
-            // Snippet placeholder
-            if let Some(&next) = chars.peek() {
-                if next == '{' {
-                    // ${...} syntax
-                    chars.next(); // consume '{'
-                    let (expanded, is_final) = parse_brace_placeholder(&mut chars);
-                    if is_final {
-                        cursor_offset = Some(result.len());
-                    }
-                    result.push_str(&expanded);
-                } else if next.is_ascii_digit() {
-                    // $n syntax
-                    let mut num = String::new();
-                    while let Some(&d) = chars.peek() {
-                        if d.is_ascii_digit() {
-                            num.push(chars.next().unwrap());
-                        } else {
-                            break;
-                        }
-                    }
-                    if num == "0" {
-                        cursor_offset = Some(result.len());
-                    }
-                    // Other tabstops expand to nothing
-                } else {
-                    // Not a valid placeholder, keep the $
-                    result.push(c);
-                }
-            } else {
-                result.push(c);
-            }
-        } else {
-            result.push(c);
+            '$' => expand_dollar(&mut chars, &mut result, &mut cursor_offset),
+            _ => result.push(c),
         }
     }
 
     ExpandedSnippet {
         cursor_offset: cursor_offset.unwrap_or(result.len()),
         text: result,
+    }
+}
+
+fn expand_dollar(
+    chars: &mut std::iter::Peekable<std::str::Chars<'_>>,
+    result: &mut String,
+    cursor_offset: &mut Option<usize>,
+) {
+    match chars.peek().copied() {
+        Some('{') => {
+            chars.next();
+            let (expanded, is_final) = parse_brace_placeholder(chars);
+            if is_final {
+                *cursor_offset = Some(result.len());
+            }
+            result.push_str(&expanded);
+        }
+        Some(next) if next.is_ascii_digit() => {
+            let mut number = String::new();
+            while let Some(digit) = chars.next_if(|digit| digit.is_ascii_digit()) {
+                number.push(digit);
+            }
+            if number == "0" {
+                *cursor_offset = Some(result.len());
+            }
+        }
+        _ => result.push('$'),
     }
 }
 
