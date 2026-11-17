@@ -247,6 +247,10 @@ pub fn convert_to_encoding(utf8_bytes: &[u8], target_encoding: Encoding) -> Vec<
 /// representation. Used on load to normalize Classic-Mac (CR) files so
 /// the `\n`-based line model can split them into rows (issue #2736).
 pub fn normalize_line_endings(bytes: Vec<u8>) -> Vec<u8> {
+    normalize_line_ending_bytes(&bytes)
+}
+
+fn normalize_line_ending_bytes(bytes: &[u8]) -> Vec<u8> {
     let mut normalized = Vec::with_capacity(bytes.len());
     let mut i = 0;
 
@@ -274,23 +278,7 @@ pub fn normalize_line_endings(bytes: Vec<u8>) -> Vec<u8> {
 /// Used during save when the user has changed the line-ending format.
 /// Pub(super) because only the in-module save path and its tests call it.
 pub(super) fn convert_line_endings_to(bytes: &[u8], target_ending: LineEnding) -> Vec<u8> {
-    // First pass: normalize everything to LF
-    let mut normalized = Vec::with_capacity(bytes.len());
-    let mut i = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'\r' {
-            if i + 1 < bytes.len() && bytes[i + 1] == b'\n' {
-                normalized.push(b'\n');
-                i += 2;
-                continue;
-            } else {
-                normalized.push(b'\n');
-            }
-        } else {
-            normalized.push(bytes[i]);
-        }
-        i += 1;
-    }
+    let normalized = normalize_line_ending_bytes(bytes);
 
     // If target is LF, we're done
     if target_ending == LineEnding::LF {
