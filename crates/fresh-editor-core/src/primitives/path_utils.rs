@@ -12,15 +12,14 @@ use std::path::PathBuf;
 ///
 /// If the home directory cannot be determined, the path is returned unchanged.
 pub fn expand_tilde(path: &str) -> PathBuf {
-    if let Some(suffix) = path.strip_prefix('~') {
-        if let Some(home) = dirs::home_dir() {
-            home.join(suffix.trim_start_matches('/'))
-        } else {
-            PathBuf::from(path)
-        }
-    } else {
-        PathBuf::from(path)
-    }
+    let Some(suffix) = path.strip_prefix('~') else {
+        return PathBuf::from(path);
+    };
+    let Some(home) = dirs::home_dir() else {
+        return PathBuf::from(path);
+    };
+
+    home.join(suffix.trim_start_matches('/'))
 }
 
 #[cfg(test)]
