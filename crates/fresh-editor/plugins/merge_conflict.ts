@@ -1428,8 +1428,13 @@ async function createMergePanels(): Promise<void> {
 // Public Commands - Navigation
 // =============================================================================
 
-function merge_next_conflict() : void {
-  editor.debug(`merge_next_conflict called, isActive=${mergeState.isActive}, conflicts=${mergeState.conflicts.length}`);
+/**
+ * Shared conflict navigation helper for forward (+1) and backward (-1) stepping.
+ */
+function navigateConflict(direction: 1 | -1, callerName: string): void {
+  editor.debug(
+    `${callerName} called, isActive=${mergeState.isActive}, conflicts=${mergeState.conflicts.length}`,
+  );
 
   if (!mergeState.isActive) {
     editor.setStatus(editor.t("status.no_active_merge"));
@@ -1446,69 +1451,48 @@ function merge_next_conflict() : void {
     return;
   }
 
-  // Find next unresolved conflict (or wrap around)
-  let startIndex = mergeState.selectedIndex;
-  let index = (startIndex + 1) % mergeState.conflicts.length;
+  const count = mergeState.conflicts.length;
+  const step = (idx: number) => (idx + direction + count) % count;
 
-  // First try to find next unresolved
+  // First try to find the next/previous unresolved conflict (wrapping around)
+  const startIndex = mergeState.selectedIndex;
+  let index = step(startIndex);
+
   while (index !== startIndex) {
     if (!mergeState.conflicts[index].resolved) {
       mergeState.selectedIndex = index;
-      editor.setStatus(editor.t("status.conflict_of", { current: String(index + 1), total: String(mergeState.conflicts.length) }));
+      editor.setStatus(
+        editor.t("status.conflict_of", {
+          current: String(index + 1),
+          total: String(count),
+        }),
+      );
       updateViews();
       scrollToSelectedConflict();
       return;
     }
-    index = (index + 1) % mergeState.conflicts.length;
+    index = step(index);
   }
 
-  // If all resolved, just move to next
-  mergeState.selectedIndex = (mergeState.selectedIndex + 1) % mergeState.conflicts.length;
-  editor.setStatus(editor.t("status.conflict_all_resolved", { current: String(mergeState.selectedIndex + 1), total: String(mergeState.conflicts.length) }));
+  // If all resolved, just step one conflict in the requested direction
+  mergeState.selectedIndex = step(mergeState.selectedIndex);
+  editor.setStatus(
+    editor.t("status.conflict_all_resolved", {
+      current: String(mergeState.selectedIndex + 1),
+      total: String(count),
+    }),
+  );
   updateViews();
   scrollToSelectedConflict();
 }
+
+function merge_next_conflict(): void {
+  navigateConflict(1, "merge_next_conflict");
+}
 registerHandler("merge_next_conflict", merge_next_conflict);
 
-function merge_prev_conflict() : void {
-  editor.debug(`merge_prev_conflict called, isActive=${mergeState.isActive}, conflicts=${mergeState.conflicts.length}`);
-
-  if (!mergeState.isActive) {
-    editor.setStatus(editor.t("status.no_active_merge"));
-    return;
-  }
-  if (mergeState.conflicts.length === 0) {
-    editor.setStatus(editor.t("status.no_conflicts"));
-    return;
-  }
-  if (mergeState.conflicts.length === 1) {
-    // Single conflict: just re-scroll to it (useful for re-focusing)
-    editor.setStatus(editor.t("status.single_refocused"));
-    scrollToSelectedConflict();
-    return;
-  }
-
-  // Find previous unresolved conflict (or wrap around)
-  let startIndex = mergeState.selectedIndex;
-  let index = (startIndex - 1 + mergeState.conflicts.length) % mergeState.conflicts.length;
-
-  // First try to find previous unresolved
-  while (index !== startIndex) {
-    if (!mergeState.conflicts[index].resolved) {
-      mergeState.selectedIndex = index;
-      editor.setStatus(editor.t("status.conflict_of", { current: String(index + 1), total: String(mergeState.conflicts.length) }));
-      updateViews();
-      scrollToSelectedConflict();
-      return;
-    }
-    index = (index - 1 + mergeState.conflicts.length) % mergeState.conflicts.length;
-  }
-
-  // If all resolved, just move to previous
-  mergeState.selectedIndex = (mergeState.selectedIndex - 1 + mergeState.conflicts.length) % mergeState.conflicts.length;
-  editor.setStatus(editor.t("status.conflict_all_resolved", { current: String(mergeState.selectedIndex + 1), total: String(mergeState.conflicts.length) }));
-  updateViews();
-  scrollToSelectedConflict();
+function merge_prev_conflict(): void {
+  navigateConflict(-1, "merge_prev_conflict");
 }
 registerHandler("merge_prev_conflict", merge_prev_conflict);
 
