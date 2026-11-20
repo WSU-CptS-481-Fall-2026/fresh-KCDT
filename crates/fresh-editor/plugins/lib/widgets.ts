@@ -1108,8 +1108,7 @@ export class WidgetPanel {
   /** Render or re-render the panel against the given spec.
    * Cheap to call on every state change; the host reconciles. */
   set(spec: WidgetSpec): boolean {
-    // deno-lint-ignore no-explicit-any
-    const editor = (globalThis as any).editor;
+    const editor = getEditor();
     if (!this.mounted) {
       this.mounted = true;
       return editor.mountWidgetPanel(
@@ -1127,8 +1126,7 @@ export class WidgetPanel {
   unmount(): boolean {
     if (!this.mounted) return true;
     this.mounted = false;
-    // deno-lint-ignore no-explicit-any
-    const editor = (globalThis as any).editor;
+    const editor = getEditor();
     return editor.unmountWidgetPanel(this.panelId);
   }
 
@@ -1137,8 +1135,7 @@ export class WidgetPanel {
    * fires `widget_event` as appropriate. See `WidgetAction` for
    * the action shapes. */
   command(action: WidgetAction): boolean {
-    // deno-lint-ignore no-explicit-any
-    const editor = (globalThis as any).editor;
+    const editor = getEditor();
     return editor.widgetCommand(this.panelId, action);
   }
 
@@ -1149,8 +1146,7 @@ export class WidgetPanel {
    * for the shapes. The typed wrappers below cover the common
    * cases. */
   mutate(mutation: WidgetMutation): boolean {
-    // deno-lint-ignore no-explicit-any
-    const editor = (globalThis as any).editor;
+    const editor = getEditor();
     return editor.widgetMutate(this.panelId, mutation);
   }
 
@@ -1343,8 +1339,7 @@ export class FloatingWidgetPanel {
       labelAlign?: LabelAlign;
     } = {},
   ): boolean {
-    // deno-lint-ignore no-explicit-any
-    const editor = (globalThis as any).editor;
+    const editor = getEditor();
     const wp = options.widthPct ?? 60;
     const hp = options.heightPct ?? 40;
     this.mounted = true;
@@ -1367,8 +1362,7 @@ export class FloatingWidgetPanel {
    * keyed widgets is preserved. No-op when not mounted. */
   update(spec: WidgetSpec): boolean {
     if (!this.mounted) return false;
-    // deno-lint-ignore no-explicit-any
-    const editor = (globalThis as any).editor;
+    const editor = getEditor();
     return editor.updateFloatingWidget(this.panelId, spec);
   }
 
@@ -1377,8 +1371,7 @@ export class FloatingWidgetPanel {
   unmount(): boolean {
     if (!this.mounted) return true;
     this.mounted = false;
-    // deno-lint-ignore no-explicit-any
-    const editor = (globalThis as any).editor;
+    const editor = getEditor();
     return editor.unmountFloatingWidget(this.panelId);
   }
 
@@ -1387,15 +1380,13 @@ export class FloatingWidgetPanel {
    * so plugins rarely need to call this directly — it's exposed
    * for symmetry with `WidgetPanel`. */
   command(action: WidgetAction): boolean {
-    // deno-lint-ignore no-explicit-any
-    const editor = (globalThis as any).editor;
+    const editor = getEditor();
     return editor.widgetCommand(this.panelId, action);
   }
 
   /** Apply a targeted mutation in place — the IPC fast path. */
   mutate(mutation: WidgetMutation): boolean {
-    // deno-lint-ignore no-explicit-any
-    const editor = (globalThis as any).editor;
+    const editor = getEditor();
     return editor.widgetMutate(this.panelId, mutation);
   }
 
