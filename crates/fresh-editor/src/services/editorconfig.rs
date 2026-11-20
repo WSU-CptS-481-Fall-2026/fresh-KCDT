@@ -241,22 +241,22 @@ fn append_glob(chars: &[char], out: &mut String) {
                 }
             }
             '*' => {
-                if i + 1 < n && chars[i + 1] == '*' {
-                    let mut j = i + 2;
-                    while j < n && chars[j] == '*' {
-                        j += 1;
-                    }
-                    if j < n && chars[j] == '/' {
-                        // `**/` matches zero or more directory levels.
-                        out.push_str("(?:.*/)?");
-                        i = j + 1;
-                    } else {
-                        out.push_str(".*");
-                        i = j;
-                    }
-                } else {
+                if i + 1 >= n || chars[i + 1] != '*' {
                     out.push_str("[^/]*");
                     i += 1;
+                    continue;
+                }
+                let mut j = i + 2;
+                while j < n && chars[j] == '*' {
+                    j += 1;
+                }
+                if j < n && chars[j] == '/' {
+                    // `**/` matches zero or more directory levels.
+                    out.push_str("(?:.*/)?");
+                    i = j + 1;
+                } else {
+                    out.push_str(".*");
+                    i = j;
                 }
             }
             '?' => {
@@ -264,58 +264,58 @@ fn append_glob(chars: &[char], out: &mut String) {
                 i += 1;
             }
             '[' => {
-                if let Some(close) = find_class_end(chars, i) {
-                    out.push('[');
-                    let mut k = i + 1;
-                    if chars[k] == '!' || chars[k] == '^' {
-                        out.push('^');
-                        k += 1;
-                    }
-                    while k < close {
-                        match chars[k] {
-                            '\\' | ']' | '^' => {
-                                out.push('\\');
-                                out.push(chars[k]);
-                            }
-                            other => out.push(other),
-                        }
-                        k += 1;
-                    }
-                    out.push(']');
-                    i = close + 1;
-                } else {
+                let Some(close) = find_class_end(chars, i) else {
                     push_literal('[', out);
                     i += 1;
+                    continue;
+                };
+                out.push('[');
+                let mut k = i + 1;
+                if chars[k] == '!' || chars[k] == '^' {
+                    out.push('^');
+                    k += 1;
                 }
+                while k < close {
+                    match chars[k] {
+                        '\\' | ']' | '^' => {
+                            out.push('\\');
+                            out.push(chars[k]);
+                        }
+                        other => out.push(other),
+                    }
+                    k += 1;
+                }
+                out.push(']');
+                i = close + 1;
             }
             '{' => {
-                if let Some(close) = find_brace_end(chars, i) {
-                    let inner = &chars[i + 1..close];
-                    if let Some((lo, hi)) = parse_num_range(inner) {
-                        push_num_range(lo, hi, out);
-                    } else {
-                        let alts = split_top_level_commas(inner);
-                        if alts.len() <= 1 {
-                            // No top-level comma: braces are literal per spec.
-                            push_literal('{', out);
-                            append_glob(inner, out);
-                            push_literal('}', out);
-                        } else {
-                            out.push_str("(?:");
-                            for (idx, alt) in alts.iter().enumerate() {
-                                if idx > 0 {
-                                    out.push('|');
-                                }
-                                append_glob(alt, out);
-                            }
-                            out.push(')');
-                        }
-                    }
-                    i = close + 1;
-                } else {
+                let Some(close) = find_brace_end(chars, i) else {
                     push_literal('{', out);
                     i += 1;
+                    continue;
+                };
+                let inner = &chars[i + 1..close];
+                i = close + 1;
+                if let Some((lo, hi)) = parse_num_range(inner) {
+                    push_num_range(lo, hi, out);
+                    continue;
                 }
+                let alts = split_top_level_commas(inner);
+                if alts.len() <= 1 {
+                    // No top-level comma: braces are literal per spec.
+                    push_literal('{', out);
+                    append_glob(inner, out);
+                    push_literal('}', out);
+                    continue;
+                }
+                out.push_str("(?:");
+                for (idx, alt) in alts.iter().enumerate() {
+                    if idx > 0 {
+                        out.push('|');
+                    }
+                    append_glob(alt, out);
+                }
+                out.push(')');
             }
             '/' => {
                 out.push('/');
