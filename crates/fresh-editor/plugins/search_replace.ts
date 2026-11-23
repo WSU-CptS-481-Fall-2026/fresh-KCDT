@@ -239,7 +239,9 @@ function byteLen(s: string): number {
 /** Count display columns (codepoints; approximation for monospace terminal). */
 function charLen(s: string): number {
   let len = 0;
-  for (const _c of s) { len++; }
+  for (const _c of s) {
+    len++;
+  }
   return len;
 }
 
@@ -363,7 +365,8 @@ function matchSpanNear(
   if (overlays.length === 0) return null;
   let o = overlays[0];
   for (const cand of overlays) {
-    if (Math.abs(cand.start - preferAt) < Math.abs(o.start - preferAt)) o = cand;
+    if (Math.abs(cand.start - preferAt) < Math.abs(o.start - preferAt))
+      o = cand;
   }
   return {
     start: charLen(text.slice(0, o.start)),
@@ -374,7 +377,9 @@ function matchSpanNear(
 // Get the active field's text
 function getActiveFieldText(): string {
   if (!panel) return "";
-  return panel.queryField === "search" ? panel.searchPattern : panel.replaceText;
+  return panel.queryField === "search"
+    ? panel.searchPattern
+    : panel.replaceText;
 }
 
 // Set the active field's text
@@ -503,7 +508,7 @@ function buildFileGroups(results: SearchResult[]): FileGroup[] {
     }
     map.get(key)!.push(r);
   }
-  const groups = order.map(absPath => ({
+  const groups = order.map((absPath) => ({
     relPath: getRelativePath(absPath),
     absPath,
     expanded: true,
@@ -586,7 +591,14 @@ function getViewportWidth(): number {
 // theme keys, and focus affordance match every other plugin.
 function buildOptionsRowSpec(): WidgetSpec {
   if (!panel) return col();
-  const { focusPanel, optionIndex, caseSensitive, useRegex, wholeWords, allFiles } = panel;
+  const {
+    focusPanel,
+    optionIndex,
+    caseSensitive,
+    useRegex,
+    wholeWords,
+    allFiles,
+  } = panel;
   const W = Math.max(MIN_WIDTH, panel.viewportWidth - 2);
   const oFocus = focusPanel === "options";
 
@@ -600,9 +612,12 @@ function buildOptionsRowSpec(): WidgetSpec {
   // sourceBufferRelPath is empty for an unsaved buffer, in which
   // case we fall back to the all-files label since restricting to
   // a path-less buffer can't match anything anyway.
-  const replLabel = (!allFiles && panel.sourceBufferRelPath)
-    ? editor.t("panel.replace_all_in_file_btn", { file: panel.sourceBufferRelPath })
-    : editor.t("panel.replace_all_btn");
+  const replLabel =
+    !allFiles && panel.sourceBufferRelPath
+      ? editor.t("panel.replace_all_in_file_btn", {
+          file: panel.sourceBufferRelPath,
+        })
+      : editor.t("panel.replace_all_btn");
   void oFocus;
   void optionIndex;
   void W;
@@ -630,11 +645,13 @@ function buildScopeRowSpec(): WidgetSpec {
   const label = panel.sourceBufferRelPath
     ? editor.t("panel.scope_row_file", { file: panel.sourceBufferRelPath })
     : editor.t("panel.scope_row_unnamed");
-  return raw([{
-    text: " " + label,
-    properties: { type: "scope-row" },
-    style: { fg: C.label, italic: true },
-  }]);
+  return raw([
+    {
+      text: " " + label,
+      properties: { type: "scope-row" },
+      style: { fg: C.label, italic: true },
+    },
+  ]);
 }
 
 // Build the typed Row spec for line 1 (search + replace fields with
@@ -657,7 +674,13 @@ function buildMatchStatsEntries(): TextPropertyEntry[] {
   const truncatedSuffix = truncated ? " " + editor.t("panel.limited") : "";
   let matchStats = "";
   if (totalMatches > 0) {
-    matchStats = "  " + editor.t("panel.match_stats", { count: String(totalMatches), files: String(fileCount) }) + truncatedSuffix;
+    matchStats =
+      "  " +
+      editor.t("panel.match_stats", {
+        count: String(totalMatches),
+        files: String(fileCount),
+      }) +
+      truncatedSuffix;
   } else if (panel.busy && panel.searchPattern) {
     matchStats = "  " + editor.t("panel.searching");
   } else if (panel.searchPattern && panel.searchPerformed && !panel.busy) {
@@ -666,10 +689,12 @@ function buildMatchStatsEntries(): TextPropertyEntry[] {
   if (matchStats.length === 0) return [];
   const overlays: InlineOverlay[] = [];
   if (truncated && totalMatches > 0) {
-    const statsWithoutSuffix = "  " + editor.t("panel.match_stats", {
-      count: String(totalMatches),
-      files: String(fileCount),
-    });
+    const statsWithoutSuffix =
+      "  " +
+      editor.t("panel.match_stats", {
+        count: String(totalMatches),
+        files: String(fileCount),
+      });
     const countEnd = byteLen(statsWithoutSuffix);
     overlays.push({ start: 0, end: countEnd, style: { fg: C.statusOk } });
     overlays.push({
@@ -689,7 +714,8 @@ function buildMatchStatsEntries(): TextPropertyEntry[] {
 
 function buildLine1Spec(): WidgetSpec {
   if (!panel) return col();
-  const { searchPattern, replaceText, focusPanel, queryField, cursorPos } = panel;
+  const { searchPattern, replaceText, focusPanel, queryField, cursorPos } =
+    panel;
   const qFocusSearch = focusPanel === "query" && queryField === "search";
   const qFocusReplace = focusPanel === "query" && queryField === "replace";
   const searchVal = searchPattern || "";
@@ -697,8 +723,12 @@ function buildLine1Spec(): WidgetSpec {
   // The plugin tracks `cursorPos` as a character offset; the widget
   // wants a UTF-8 byte offset. For ASCII they're equal; for the
   // multi-byte case we convert via byteLen of the prefix.
-  const searchCursorByte = qFocusSearch ? byteLen(searchVal.substring(0, cursorPos)) : -1;
-  const replaceCursorByte = qFocusReplace ? byteLen(replaceVal.substring(0, cursorPos)) : -1;
+  const searchCursorByte = qFocusSearch
+    ? byteLen(searchVal.substring(0, cursorPos))
+    : -1;
+  const replaceCursorByte = qFocusReplace
+    ? byteLen(replaceVal.substring(0, cursorPos))
+    : -1;
   const searchLabel = editor.t("panel.search_label");
   const replLabel = editor.t("panel.replace_label");
 
@@ -779,7 +809,7 @@ function renderFlatItemEntry(item: FlatItem, W: number): RenderedRow {
     const group = panel.fileGroups[item.fileIndex];
     const badge = getFileExtBadge(group.relPath);
     const matchCount = group.matches.length;
-    const selectedInFile = group.matches.filter(m => m.selected).length;
+    const selectedInFile = group.matches.filter((m) => m.selected).length;
     return {
       entry: styledRow(
         [
@@ -834,9 +864,16 @@ function renderFlatItemEntry(item: FlatItem, W: number): RenderedRow {
     panel.caseSensitive,
     Math.max(0, (result.match.column || 1) - 1),
   );
-  const capStart = anchor >= 0 && rawCtx.length > CONTEXT_HARD_CAP
-    ? Math.max(0, Math.min(anchor - CONTEXT_HARD_CAP / 2, rawCtx.length - CONTEXT_HARD_CAP))
-    : 0;
+  const capStart =
+    anchor >= 0 && rawCtx.length > CONTEXT_HARD_CAP
+      ? Math.max(
+          0,
+          Math.min(
+            anchor - CONTEXT_HARD_CAP / 2,
+            rawCtx.length - CONTEXT_HARD_CAP,
+          ),
+        )
+      : 0;
   const capped = rawCtx.slice(capStart, capStart + CONTEXT_HARD_CAP);
   // Leading indentation is noise worth trimming when the window starts
   // at the beginning of the line; a window that already starts mid-line
@@ -852,7 +889,8 @@ function renderFlatItemEntry(item: FlatItem, W: number): RenderedRow {
   // Where this row's match sits in `context`, after the cap slice and
   // the leading trim above — used to pick between several hits on the
   // same line. Exact, since `anchor` is an index into `rawCtx`.
-  const trimmedLead = capStart === 0 ? capped.length - capped.trimStart().length : 0;
+  const trimmedLead =
+    capStart === 0 ? capped.length - capped.trimStart().length : 0;
   const matchAt = Math.max(0, anchor) - capStart - trimmedLead;
   // **The whole capped context goes to the host, not a slice of it.**
   //
@@ -866,7 +904,13 @@ function renderFlatItemEntry(item: FlatItem, W: number): RenderedRow {
   // The cap is unchanged: `CONTEXT_HARD_CAP` still bounds every per-codepoint
   // walk below, and it is what bounds how far a pan can travel.
   const span = panel.searchPattern
-    ? matchSpanNear(context, panel.searchPattern, panel.useRegex, panel.caseSensitive, matchAt)
+    ? matchSpanNear(
+        context,
+        panel.searchPattern,
+        panel.useRegex,
+        panel.caseSensitive,
+        matchAt,
+      )
     : null;
 
   // Pattern-match highlights inside the context substring. Emitted
@@ -875,7 +919,13 @@ function renderFlatItemEntry(item: FlatItem, W: number): RenderedRow {
   // clips them to the drawn slice.
   const ctxOverlays: InlineOverlay[] = [];
   if (panel.searchPattern) {
-    highlightMatches(context, panel.searchPattern, panel.useRegex, panel.caseSensitive, ctxOverlays);
+    highlightMatches(
+      context,
+      panel.searchPattern,
+      panel.useRegex,
+      panel.caseSensitive,
+      ctxOverlays,
+    );
   }
 
   const segments: StyledSegment[] = [
@@ -886,7 +936,11 @@ function renderFlatItemEntry(item: FlatItem, W: number): RenderedRow {
 
   const entry = styledRow(segments, {
     padToChars: innerWidth,
-    properties: { type: "match-row", fileIndex: item.fileIndex, matchIndex: item.matchIndex },
+    properties: {
+      type: "match-row",
+      fileIndex: item.fileIndex,
+      matchIndex: item.matchIndex,
+    },
   });
   // The window is addressed to the whole row, so both numbers carry the
   // leading pieces' width. `location` is a path plus a line number — the
@@ -928,11 +982,17 @@ function flatItemsToTreeNodes(
       }
       // File-row checkbox derives from children: checked iff every
       // match in this file is selected.
-      const fileChecked = panel!.fileGroups[item.fileIndex].matches.every(m => m.selected);
-      return treeNode(entry, { depth: 0, hasChildren: true, checked: fileChecked });
+      const fileChecked = panel!.fileGroups[item.fileIndex].matches.every(
+        (m) => m.selected,
+      );
+      return treeNode(entry, {
+        depth: 0,
+        hasChildren: true,
+        checked: fileChecked,
+      });
     }
-    const matchSelected = panel!.fileGroups[item.fileIndex]
-      .matches[item.matchIndex!].selected;
+    const matchSelected =
+      panel!.fileGroups[item.fileIndex].matches[item.matchIndex!].selected;
     return treeNode(entry, {
       depth: 1,
       hasChildren: false,
@@ -963,11 +1023,13 @@ function buildMatchListSpec(): WidgetSpec {
   // completes — dropping back to "Type a search pattern above"
   // mid-edit feels jumpy.
   const emptyState = (key: string) =>
-    raw([{
-      text: padStr("  " + editor.t(key), W),
-      properties: { type: "empty" },
-      style: { fg: C.dim },
-    }]);
+    raw([
+      {
+        text: padStr("  " + editor.t(key), W),
+        properties: { type: "empty" },
+        style: { fg: C.dim },
+      },
+    ]);
   if (!panel.searchPattern) {
     return emptyState("panel.type_pattern");
   }
@@ -1014,8 +1076,19 @@ type BuildPhase = "all" | "preOptions" | "postOptions";
 
 function buildPanelEntries(phase: BuildPhase = "all"): TextPropertyEntry[] {
   if (!panel) return [];
-  const { searchPattern, replaceText, searchResults, fileGroups, focusPanel, queryField,
-    optionIndex, caseSensitive, useRegex, wholeWords, cursorPos } = panel;
+  const {
+    searchPattern,
+    replaceText,
+    searchResults,
+    fileGroups,
+    focusPanel,
+    queryField,
+    optionIndex,
+    caseSensitive,
+    useRegex,
+    wholeWords,
+    cursorPos,
+  } = panel;
   // The line-1 + options-row variables are still destructured for
   // readability with the rest of the function but are now consumed
   // by `buildLine1Spec()` and `buildOptionsRowSpec()` (composed into
@@ -1058,22 +1131,34 @@ function buildPanelEntries(phase: BuildPhase = "all"): TextPropertyEntry[] {
 
   // ── Separator ──
   const sepChar = "─";
-  const matchesLabel = totalMatches > 0
-    ? " " + editor.t("panel.matches_count", { count: String(totalMatches), files: String(fileCount) }) + (panel.truncated ? " " + editor.t("panel.limited") : "") + " "
-    : " " + editor.t("panel.matches_title") + " ";
+  const matchesLabel =
+    totalMatches > 0
+      ? " " +
+        editor.t("panel.matches_count", {
+          count: String(totalMatches),
+          files: String(fileCount),
+        }) +
+        (panel.truncated ? " " + editor.t("panel.limited") : "") +
+        " "
+      : " " + editor.t("panel.matches_title") + " ";
   const sepRemaining = W - charLen(matchesLabel);
   const sepLeft = Math.floor(sepRemaining / 2);
   const sepRight = sepRemaining - sepLeft;
-  const sepLine = (sepLeft > 0 ? sepChar.repeat(sepLeft) : "") + matchesLabel + (sepRight > 0 ? sepChar.repeat(sepRight) : "");
+  const sepLine =
+    (sepLeft > 0 ? sepChar.repeat(sepLeft) : "") +
+    matchesLabel +
+    (sepRight > 0 ? sepChar.repeat(sepRight) : "");
   entries.push({
     text: sepLine + "\n",
     properties: { type: "separator" },
     style: { fg: C.separator },
-    inlineOverlays: [{
-      start: byteLen(sepChar.repeat(sepLeft)),
-      end: byteLen(sepChar.repeat(sepLeft) + matchesLabel),
-      style: { fg: C.label, bold: true },
-    }],
+    inlineOverlays: [
+      {
+        start: byteLen(sepChar.repeat(sepLeft)),
+        end: byteLen(sepChar.repeat(sepLeft) + matchesLabel),
+        style: { fg: C.label, bold: true },
+      },
+    ],
   });
 
   // ── Matches tree is now rendered by `buildMatchListSpec()` —
@@ -1105,8 +1190,13 @@ function buildHelpHints(): HintEntry[] {
 }
 
 // Build field display string: [value] with cursor
-function buildFieldDisplay(value: string, cursorPos: number, maxLen: number): string {
-  const display = value.length > maxLen ? value.slice(0, maxLen - 1) + "…" : value;
+function buildFieldDisplay(
+  value: string,
+  cursorPos: number,
+  maxLen: number,
+): string {
+  const display =
+    value.length > maxLen ? value.slice(0, maxLen - 1) + "…" : value;
   if (cursorPos >= 0) {
     // Show cursor as underscore or pipe at position
     return "[" + display + "]";
@@ -1115,14 +1205,23 @@ function buildFieldDisplay(value: string, cursorPos: number, maxLen: number): st
 }
 
 // Add cursor overlay at the right byte position within a field
-function addCursorOverlay(value: string, cursorPos: number, fieldByteStart: number, overlays: InlineOverlay[]): void {
+function addCursorOverlay(
+  value: string,
+  cursorPos: number,
+  fieldByteStart: number,
+  overlays: InlineOverlay[],
+): void {
   if (cursorPos < 0) return;
   const beforeCursor = value.substring(0, cursorPos);
   const cursorBytePos = fieldByteStart + byteLen(beforeCursor);
   // Highlight the character at cursor position (or the closing bracket if at end)
   const charAtCursor = cursorPos < value.length ? value.charAt(cursorPos) : "]";
   const cursorByteEnd = cursorBytePos + byteLen(charAtCursor);
-  overlays.push({ start: cursorBytePos, end: cursorByteEnd, style: { fg: [0, 0, 0], bg: C.cursorBg } });
+  overlays.push({
+    start: cursorBytePos,
+    end: cursorByteEnd,
+    style: { fg: [0, 0, 0], bg: C.cursorBg },
+  });
 }
 
 // Append pattern-match highlight overlays (one per occurrence) to
@@ -1136,7 +1235,13 @@ function addCursorOverlay(value: string, cursorPos: number, fieldByteStart: numb
 // indices and Unicode codepoint indices coincide, so `indexOf` /
 // `RegExp.exec` indices map directly to char offsets without a
 // per-overlay codepoint walk.
-function highlightMatches(text: string, pattern: string, isRegex: boolean, caseSensitive: boolean, overlays: InlineOverlay[]): void {
+function highlightMatches(
+  text: string,
+  pattern: string,
+  isRegex: boolean,
+  caseSensitive: boolean,
+  overlays: InlineOverlay[],
+): void {
   if (!pattern) return;
   try {
     if (!isRegex) {
@@ -1150,7 +1255,12 @@ function highlightMatches(text: string, pattern: string, isRegex: boolean, caseS
       while (pos < searchText.length) {
         const idx = searchText.indexOf(searchPat, pos);
         if (idx < 0) break;
-        overlays.push({ start: idx, end: idx + pattern.length, style: { bg: C.matchBg, fg: C.matchFg }, unit: "char" });
+        overlays.push({
+          start: idx,
+          end: idx + pattern.length,
+          style: { bg: C.matchBg, fg: C.matchFg },
+          unit: "char",
+        });
         pos = idx + pattern.length;
       }
     } else {
@@ -1158,11 +1268,21 @@ function highlightMatches(text: string, pattern: string, isRegex: boolean, caseS
       const re = new RegExp(pattern, flags);
       let m;
       while ((m = re.exec(text)) !== null) {
-        if (m[0].length === 0) { re.lastIndex++; continue; }
-        overlays.push({ start: m.index, end: m.index + m[0].length, style: { bg: C.matchBg, fg: C.matchFg }, unit: "char" });
+        if (m[0].length === 0) {
+          re.lastIndex++;
+          continue;
+        }
+        overlays.push({
+          start: m.index,
+          end: m.index + m[0].length,
+          style: { bg: C.matchBg, fg: C.matchFg },
+          unit: "char",
+        });
       }
     }
-  } catch (_e) { /* invalid regex */ }
+  } catch (_e) {
+    /* invalid regex */
+  }
 }
 
 // =============================================================================
@@ -1216,10 +1336,7 @@ function updatePanelContent(): void {
   // needs to be force-expanded by default. The mutator is a no-op
   // when the tree isn't mounted yet (first `set()` call).
   if (panel.searchPattern && panel.searchResults.length > 0) {
-    panel.widgetPanel.setExpandedKeys(
-      "matchTree",
-      [...panel.expandedFileKeys],
-    );
+    panel.widgetPanel.setExpandedKeys("matchTree", [...panel.expandedFileKeys]);
   }
 }
 
@@ -1286,7 +1403,10 @@ const UI_FLUSH_MAX_DELTA = 100;
  * per-chunk callbacks crossing the FFI boundary, so the host's main
  * thread is free to process input and render between pumps.
  */
-async function performSearch(pattern: string, silent?: boolean): Promise<SearchResult[]> {
+async function performSearch(
+  pattern: string,
+  silent?: boolean,
+): Promise<SearchResult[]> {
   if (!panel) return [];
 
   const generation = ++currentSearchGeneration;
@@ -1318,7 +1438,11 @@ async function performSearch(pattern: string, silent?: boolean): Promise<SearchR
   // this the prior search would keep walking the project until it
   // hit max_results, wasting CPU.
   if (activeSearchHandle) {
-    try { activeSearchHandle.cancel(); } catch (_e) { /* ignore */ }
+    try {
+      activeSearchHandle.cancel();
+    } catch (_e) {
+      /* ignore */
+    }
     activeSearchHandle = null;
   }
 
@@ -1345,7 +1469,11 @@ async function performSearch(pattern: string, silent?: boolean): Promise<SearchR
     while (true) {
       // Discard the in-flight search if a newer one started while we slept.
       if (generation !== currentSearchGeneration || !panel) {
-        try { handle.cancel(); } catch (_e) { /* ignore */ }
+        try {
+          handle.cancel();
+        } catch (_e) {
+          /* ignore */
+        }
         return allResults;
       }
 
@@ -1389,8 +1517,10 @@ async function performSearch(pattern: string, silent?: boolean): Promise<SearchR
         // an unnamed/unsaved buffer (empty sourceBufferPath) matches by
         // buffer id instead — the host tags its in-memory matches with it.
         if (!panel.allFiles) {
-          const sameFile = !!panel.sourceBufferPath && m.file === panel.sourceBufferPath;
-          const sameBuffer = !!panel.sourceBufferId && m.bufferId === panel.sourceBufferId;
+          const sameFile =
+            !!panel.sourceBufferPath && m.file === panel.sourceBufferPath;
+          const sameBuffer =
+            !!panel.sourceBufferId && m.bufferId === panel.sourceBufferId;
           if (!sameFile && !sameBuffer) continue;
         }
         const result: SearchResult = { match: m, selected: true };
@@ -1417,7 +1547,11 @@ async function performSearch(pattern: string, silent?: boolean): Promise<SearchR
         }
         const matchIdx = panel.fileGroups[fileIdx].matches.length;
         panel.fileGroups[fileIdx].matches.push(result);
-        deltaItems.push({ type: "match", fileIndex: fileIdx, matchIndex: matchIdx });
+        deltaItems.push({
+          type: "match",
+          fileIndex: fileIdx,
+          matchIndex: matchIdx,
+        });
       }
       panel.searchResults = allResults;
       // Coalesce the per-chunk delta into a pending buffer. Each
@@ -1454,10 +1588,9 @@ async function performSearch(pattern: string, silent?: boolean): Promise<SearchR
         lastStreamingFlatCount += flushed.length;
         lastUiFlush = nowMs;
         if (flushedNewExp.length > 0) {
-          panel.widgetPanel.setExpandedKeys(
-            "matchTree",
-            [...panel.expandedFileKeys],
-          );
+          panel.widgetPanel.setExpandedKeys("matchTree", [
+            ...panel.expandedFileKeys,
+          ]);
         }
       } else if (lastStreamingFlatCount === 0 && panel.fileGroups.length > 0) {
         // First time we have any results — mount the Tree via a full
@@ -1467,7 +1600,8 @@ async function performSearch(pattern: string, silent?: boolean): Promise<SearchR
         pendingTreeDeltaItems = [];
         pendingNewExpandedKeys = [];
         updatePanelContent();
-        lastStreamingFlatCount = panel.fileGroups.length + panel.searchResults.length;
+        lastStreamingFlatCount =
+          panel.fileGroups.length + panel.searchResults.length;
         lastUiFlush = nowMs;
       }
       if (producerFinished) {
@@ -1492,8 +1626,14 @@ async function performSearch(pattern: string, silent?: boolean): Promise<SearchR
             // empty (no per-node serialization cost).
             updatePanelContent();
           } else {
-            panel.widgetPanel.setRawEntries("matchStats", buildMatchStatsEntries());
-            panel.widgetPanel.setRawEntries("separator", buildPanelEntries("postOptions"));
+            panel.widgetPanel.setRawEntries(
+              "matchStats",
+              buildMatchStatsEntries(),
+            );
+            panel.widgetPanel.setRawEntries(
+              "separator",
+              buildPanelEntries("postOptions"),
+            );
           }
         }
         lastStreamingFlatCount = 0;
@@ -1504,7 +1644,10 @@ async function performSearch(pattern: string, silent?: boolean): Promise<SearchR
       // the count updates in real time as results stream in.
       if (!producerFinished && dueToFlush && panel.widgetPanel) {
         panel.widgetPanel.setRawEntries("matchStats", buildMatchStatsEntries());
-        panel.widgetPanel.setRawEntries("separator", buildPanelEntries("postOptions"));
+        panel.widgetPanel.setRawEntries(
+          "separator",
+          buildPanelEntries("postOptions"),
+        );
       }
 
       if (producerFinished) {
@@ -1539,9 +1682,19 @@ async function performSearch(pattern: string, silent?: boolean): Promise<SearchR
       if (allResults.length === 0) {
         editor.setStatus(editor.t("status.no_matches", { pattern }));
       } else if (panel.truncated) {
-        editor.setStatus(editor.t("status.found_matches", { count: String(allResults.length) }) + " " + editor.t("panel.limited"));
+        editor.setStatus(
+          editor.t("status.found_matches", {
+            count: String(allResults.length),
+          }) +
+            " " +
+            editor.t("panel.limited"),
+        );
       } else {
-        editor.setStatus(editor.t("status.found_matches", { count: String(allResults.length) }));
+        editor.setStatus(
+          editor.t("status.found_matches", {
+            count: String(allResults.length),
+          }),
+        );
       }
     }
     return allResults;
@@ -1610,10 +1763,14 @@ async function openPanelInner(opts?: { allFiles?: boolean }): Promise<void> {
         }
       }
     }
-  } catch (_e) { /* no selection / no buffer */ }
+  } catch (_e) {
+    /* no selection / no buffer */
+  }
 
   const allFiles = opts?.allFiles ?? true;
-  const sourceBufferRelPath = sourceBufferPath ? getRelativePath(sourceBufferPath) : "";
+  const sourceBufferRelPath = sourceBufferPath
+    ? getRelativePath(sourceBufferPath)
+    : "";
 
   if (panel) {
     panel.focusPanel = "query";
@@ -1695,7 +1852,9 @@ async function openPanelInner(opts?: { allFiles?: boolean }): Promise<void> {
       knownFileKeys: new Set<string>(),
       widgetPanel: null,
     };
-    editor.debug(`Search/Replace: panel opened, bufferId=${result.bufferId}, splitId=${result.splitId}`);
+    editor.debug(
+      `Search/Replace: panel opened, bufferId=${result.bufferId}, splitId=${result.splitId}`,
+    );
 
     updatePanelContent();
   } catch (error) {
@@ -1712,7 +1871,7 @@ async function openPanelInner(opts?: { allFiles?: boolean }): Promise<void> {
 
 async function executeReplacements(results?: SearchResult[]): Promise<string> {
   if (!panel) return "";
-  const toReplace = results || panel.searchResults.filter(r => r.selected);
+  const toReplace = results || panel.searchResults.filter((r) => r.selected);
   if (toReplace.length === 0) {
     return editor.t("status.no_selected");
   }
@@ -1722,7 +1881,11 @@ async function executeReplacements(results?: SearchResult[]): Promise<string> {
   // "[No Name]" label) still resolves to the right buffer rather than
   // colliding with another unnamed buffer's matches. On-disk files
   // (bufferId 0) key by path and are opened/saved by the host as before.
-  type Group = { filePath: string; bufferId: number; matches: Array<[number, number]> };
+  type Group = {
+    filePath: string;
+    bufferId: number;
+    matches: Array<[number, number]>;
+  };
   const groups: Map<string, Group> = new Map();
   for (const result of toReplace) {
     const bufferId = result.match.bufferId || 0;
@@ -1747,20 +1910,49 @@ async function executeReplacements(results?: SearchResult[]): Promise<string> {
         group.filePath,
         group.matches,
         panel.replaceText,
-        group.bufferId
+        group.bufferId,
       );
       replacementsCount += result.replacements;
       if (result.replacements > 0) filesModified++;
     } catch (e) {
-      errors.push(`${group.filePath}: ${e instanceof Error ? e.message : String(e)}`);
+      errors.push(
+        `${group.filePath}: ${e instanceof Error ? e.message : String(e)}`,
+      );
     }
   }
 
   if (errors.length > 0) {
     editor.debug(`Replacement errors: ${errors.join(", ")}`);
-    return editor.t("status.replaced_with_errors", { files: String(filesModified), errors: String(errors.length) });
+    return editor.t("status.replaced_with_errors", {
+      files: String(filesModified),
+      errors: String(errors.length),
+    });
   }
-  return editor.t("status.replaced", { count: String(replacementsCount), files: String(filesModified) });
+  return editor.t("status.replaced", {
+    count: String(replacementsCount),
+    files: String(filesModified),
+  });
+}
+
+// finishing sequence for making a replacement.
+async function completeReplacement(toReplace: SearchResult[]): Promise<void> {
+  if (!panel) return;
+
+  panel.busy = true;
+  editor.setStatus(
+    editor.t("status.replacing", { count: String(toReplace.length) }),
+  );
+
+  const statusMsg = await executeReplacements(toReplace);
+  editor.setStatus(statusMsg);
+
+  clearMatchMarkers();
+  panel.searchResults = [];
+  panel.fileGroups = [];
+  panel.busy = false;
+
+  await rerunSearchQuiet();
+  updatePanelContent();
 }
 
 // =============================================================================
@@ -1864,11 +2056,13 @@ function dispatch(action: WidgetAction): void {
   panel?.widgetPanel?.command(action);
 }
 
-registerHandler("search_replace_backspace", () => dispatch(widgetKey("Backspace")));
-registerHandler("search_replace_delete",    () => dispatch(widgetKey("Delete")));
-registerHandler("search_replace_home",      () => dispatch(widgetKey("Home")));
-registerHandler("search_replace_end",       () => dispatch(widgetKey("End")));
-registerHandler("search_replace_nav_left",  () => dispatch(widgetKey("Left")));
+registerHandler("search_replace_backspace", () =>
+  dispatch(widgetKey("Backspace")),
+);
+registerHandler("search_replace_delete", () => dispatch(widgetKey("Delete")));
+registerHandler("search_replace_home", () => dispatch(widgetKey("Home")));
+registerHandler("search_replace_end", () => dispatch(widgetKey("End")));
+registerHandler("search_replace_nav_left", () => dispatch(widgetKey("Left")));
 registerHandler("search_replace_nav_right", () => dispatch(widgetKey("Right")));
 /** Apply a stored history entry to the search field. Mutates the
  *  widget's value via setValue so the host instance state stays in
@@ -1927,8 +2121,12 @@ registerHandler("search_replace_nav_down", () => {
   }
   dispatch(widgetKey("Down"));
 });
-registerHandler("search_replace_nav_page_up",   () => dispatch(widgetKey("PageUp")));
-registerHandler("search_replace_nav_page_down", () => dispatch(widgetKey("PageDown")));
+registerHandler("search_replace_nav_page_up", () =>
+  dispatch(widgetKey("PageUp")),
+);
+registerHandler("search_replace_nav_page_down", () =>
+  dispatch(widgetKey("PageDown")),
+);
 
 // Tab / Shift+Tab now cycle focus through the host's tabbable
 // widget set (declared in spec via `key`s — searchField,
@@ -1937,8 +2135,10 @@ registerHandler("search_replace_nav_page_down", () => dispatch(widgetKey("PageDo
 // plugin needn't track focusPanel/queryField/optionIndex anymore
 // (the legacy fields linger in PanelState until the rest of the
 // plugin migrates off them).
-registerHandler("search_replace_tab",       () => dispatch(widgetKey("Tab")));
-registerHandler("search_replace_shift_tab", () => dispatch(widgetKey("Shift+Tab")));
+registerHandler("search_replace_tab", () => dispatch(widgetKey("Tab")));
+registerHandler("search_replace_shift_tab", () =>
+  dispatch(widgetKey("Shift+Tab")),
+);
 
 // Left/Right route through the smart-key dispatcher: the host
 // expands/collapses Tree nodes (when the matchTree is focused) or
@@ -1969,7 +2169,10 @@ function search_replace_toggle_whole_word(): void {
   updatePanelContent();
   rerunSearchDebounced();
 }
-registerHandler("search_replace_toggle_whole_word", search_replace_toggle_whole_word);
+registerHandler(
+  "search_replace_toggle_whole_word",
+  search_replace_toggle_whole_word,
+);
 
 function search_replace_replace_all(): void {
   doReplaceAll();
@@ -2036,7 +2239,7 @@ async function doReplaceAll(): Promise<void> {
 
 async function doReplaceAllInner(): Promise<void> {
   if (!panel) return;
-  const selected = panel.searchResults.filter(r => r.selected);
+  const selected = panel.searchResults.filter((r) => r.selected);
   if (selected.length === 0) {
     editor.setStatus(editor.t("status.no_items_selected"));
     return;
@@ -2047,7 +2250,7 @@ async function doReplaceAllInner(): Promise<void> {
   if (historyIndex < 0) historyPush(panel.searchPattern);
   // Confirm before applying.  Replacements write to disk immediately; Undo
   // only covers files that remain open in this session (see bug #1 report).
-  const fileCount = new Set(selected.map(r => r.match.file)).size;
+  const fileCount = new Set(selected.map((r) => r.match.file)).size;
   const confirmed = await editor.prompt(
     editor.t("prompt.confirm_replace", {
       count: String(selected.length),
@@ -2059,21 +2262,7 @@ async function doReplaceAllInner(): Promise<void> {
     editor.setStatus(editor.t("status.replace_cancelled"));
     return;
   }
-  panel.busy = true;
-  editor.setStatus(editor.t("status.replacing", { count: String(selected.length) }));
-  const statusMsg = await executeReplacements(selected);
-  editor.setStatus(statusMsg);
-  // Clear stale results before re-searching: the byte offsets in
-  // `panel.searchResults` now point at positions in the pre-replacement
-  // file and must never be re-used (see bug #4 — a second Alt+Enter would
-  // otherwise corrupt files by writing into moved offsets).  We also drop
-  // `busy` so rerunSearchQuiet doesn't bail out on its own guard.
-  clearMatchMarkers();
-  panel.searchResults = [];
-  panel.fileGroups = [];
-  panel.busy = false;
-  await rerunSearchQuiet();
-  updatePanelContent();
+  await completeReplacement(selected);
 }
 
 async function doReplaceScoped(): Promise<void> {
@@ -2099,7 +2288,9 @@ async function doReplaceScopedInner(): Promise<void> {
 
   let toReplace: SearchResult[] = [];
   if (item.type === "file") {
-    toReplace = panel.fileGroups[item.fileIndex].matches.filter(m => m.selected);
+    toReplace = panel.fileGroups[item.fileIndex].matches.filter(
+      (m) => m.selected,
+    );
   } else {
     const result = panel.fileGroups[item.fileIndex].matches[item.matchIndex!];
     if (result.selected) toReplace = [result];
@@ -2112,7 +2303,7 @@ async function doReplaceScopedInner(): Promise<void> {
     return;
   }
 
-  const fileCount = new Set(toReplace.map(r => r.match.file)).size;
+  const fileCount = new Set(toReplace.map((r) => r.match.file)).size;
   const confirmed = await editor.prompt(
     editor.t("prompt.confirm_replace", {
       count: String(toReplace.length),
@@ -2125,17 +2316,7 @@ async function doReplaceScopedInner(): Promise<void> {
     return;
   }
 
-  panel.busy = true;
-  editor.setStatus(editor.t("status.replacing", { count: String(toReplace.length) }));
-  const statusMsg = await executeReplacements(toReplace);
-  editor.setStatus(statusMsg);
-  // See doReplaceAll — clear stale offsets and drop busy before re-searching.
-  clearMatchMarkers();
-  panel.searchResults = [];
-  panel.fileGroups = [];
-  panel.busy = false;
-  await rerunSearchQuiet();
-  updatePanelContent();
+  await completeReplacement(toReplace);
 }
 
 // =============================================================================
@@ -2166,7 +2347,11 @@ function matchOrdinal(flat: FlatItem[], flatIdx: number): number {
 /** Flat index of the next (dir=1) / previous (dir=-1) match row
  *  relative to `from`, skipping file-header rows and wrapping around.
  *  Returns -1 when there are no match rows at all. */
-function adjacentMatchIndex(flat: FlatItem[], from: number, dir: 1 | -1): number {
+function adjacentMatchIndex(
+  flat: FlatItem[],
+  from: number,
+  dir: 1 | -1,
+): number {
   const n = flat.length;
   if (n === 0) return -1;
   // Normalize the start so the first step lands on a real neighbour
@@ -2206,7 +2391,8 @@ let nextMatchMarkerId = 0;
  *  it shifted. No-op for closed files (no buffer to anchor to). */
 function ensureMatchMarker(result: SearchResult): void {
   if (result.markerKey) return;
-  const bid = result.match.bufferId || editor.findBufferByPath(result.match.file);
+  const bid =
+    result.match.bufferId || editor.findBufferByPath(result.match.file);
   if (!bid || bid <= 0) return;
   const start = result.match.byteOffset;
   const key = `sr:${nextMatchMarkerId++}`;
@@ -2268,11 +2454,15 @@ async function resolveMatchTarget(
   result: SearchResult,
 ): Promise<{ line: number; column: number }> {
   if (result.markerKey && result.markerBufferId) {
-    const marker = editor.getMarker(result.markerBufferId, result.markerKey) as
-      | { start: number }
-      | null;
+    const marker = editor.getMarker(
+      result.markerBufferId,
+      result.markerKey,
+    ) as { start: number } | null;
     if (marker && typeof marker.start === "number") {
-      const pos = await byteOffsetToLineColumn(result.markerBufferId, marker.start);
+      const pos = await byteOffsetToLineColumn(
+        result.markerBufferId,
+        marker.start,
+      );
       result.match.line = pos.line;
       result.match.column = pos.column;
       return pos;
@@ -2333,10 +2523,12 @@ function navigateMatch(dir: 1 | -1): void {
   // first await); the source-split cursor lands a tick later once the marker
   // position is resolved. Status reflects the target immediately either way.
   jumpToMatch(flat, idx).catch((e) => editor.error(`search-replace: ${e}`));
-  editor.setStatus(editor.t("status.match_position", {
-    n: String(matchOrdinal(flat, idx)),
-    total: String(panel.searchResults.length),
-  }));
+  editor.setStatus(
+    editor.t("status.match_position", {
+      n: String(matchOrdinal(flat, idx)),
+      total: String(panel.searchResults.length),
+    }),
+  );
 }
 
 function search_replace_next_match(): void {
@@ -2365,7 +2557,9 @@ async function activateTreeItem(idx: number): Promise<void> {
     } else {
       panel.expandedFileKeys.add(k);
     }
-    panel.widgetPanel?.setExpandedKeys("matchTree", [...panel.expandedFileKeys]);
+    panel.widgetPanel?.setExpandedKeys("matchTree", [
+      ...panel.expandedFileKeys,
+    ]);
   } else {
     // Opening a result is a "this is the search I wanted" signal —
     // commit it to history immediately, regardless of how long the
@@ -2384,11 +2578,7 @@ function search_replace_close(): void {
   // treat panel-close as a settle and commit to history. The
   // searchPerformed guard avoids capturing half-typed patterns
   // that never made it past the empty-state.
-  if (
-    historyIndex < 0
-    && panel.searchPattern
-    && panel.searchPerformed
-  ) {
+  if (historyIndex < 0 && panel.searchPattern && panel.searchPerformed) {
     historyPush(panel.searchPattern);
   }
   // Drop the anchor markers we registered on the source buffers so they
@@ -2425,13 +2615,14 @@ registerHandler("start_search_replace", start_search_replace);
 function start_search_replace_in_buffer(): void {
   openPanel({ allFiles: false });
 }
-registerHandler("start_search_replace_in_buffer", start_search_replace_in_buffer);
+registerHandler(
+  "start_search_replace_in_buffer",
+  start_search_replace_in_buffer,
+);
 
 // =============================================================================
 // Event handlers (resize updates width)
 // =============================================================================
-
-
 
 editor.on("resize", (data) => {
   if (!panel) return;
@@ -2512,9 +2703,10 @@ editor.on("widget_event", (args) => {
       | { value?: string; cursorByte?: number }
       | undefined;
     if (typeof payload?.value !== "string") return;
-    const cursorByte = typeof payload.cursorByte === "number"
-      ? payload.cursorByte
-      : payload.value.length;
+    const cursorByte =
+      typeof payload.cursorByte === "number"
+        ? payload.cursorByte
+        : payload.value.length;
     if (args.widget_key === "searchField") {
       if (panel.searchPattern !== payload.value) {
         // Pattern mutated by the user; cached "no matches" / result
@@ -2560,12 +2752,16 @@ editor.on("widget_event", (args) => {
   // expectation (issue #2434 follow-up). Keyboard arrow-moves carry
   // no `via` marker and only move the highlight.
   if (args.event_type === "select") {
-    const payload = args.payload as { index?: number; via?: string } | undefined;
+    const payload = args.payload as
+      | { index?: number; via?: string }
+      | undefined;
     const idx = payload?.index;
     if (typeof idx === "number") {
       panel.matchIndex = idx;
       if (payload?.via === "click") {
-        activateTreeItem(idx).catch((e) => editor.error(`search-replace: ${e}`));
+        activateTreeItem(idx).catch((e) =>
+          editor.error(`search-replace: ${e}`),
+        );
       }
     }
     return;
@@ -2580,7 +2776,10 @@ editor.on("widget_event", (args) => {
     const payload = args.payload as
       | { key?: string; expanded?: boolean }
       | undefined;
-    if (typeof payload?.key === "string" && typeof payload.expanded === "boolean") {
+    if (
+      typeof payload?.key === "string" &&
+      typeof payload.expanded === "boolean"
+    ) {
       if (payload.expanded) panel.expandedFileKeys.add(payload.key);
       else panel.expandedFileKeys.delete(payload.key);
     }
@@ -2678,7 +2877,7 @@ function applyMatchTreeToggle(idx: number, newChecked: boolean): void {
     // The file header's checked glyph is derived (all-or-nothing).
     // After flipping a single match, recompute and push the file
     // row's new state so it stays in sync with its children.
-    const fileAllSelected = fileGroup.matches.every(m => m.selected);
+    const fileAllSelected = fileGroup.matches.every((m) => m.selected);
     const fileKey = flatItemKey({ type: "file", fileIndex: item.fileIndex });
     panel.widgetPanel?.setCheckedKeys("matchTree", fileAllSelected, [fileKey]);
   } else {
@@ -2687,13 +2886,12 @@ function applyMatchTreeToggle(idx: number, newChecked: boolean): void {
     for (const m of fileGroup.matches) m.selected = newChecked;
     const fileKey = flatItemKey(item);
     const matchKeys = fileGroup.matches.map((_, mi) =>
-      flatItemKey({ type: "match", fileIndex: item.fileIndex, matchIndex: mi })
+      flatItemKey({ type: "match", fileIndex: item.fileIndex, matchIndex: mi }),
     );
-    panel.widgetPanel?.setCheckedKeys(
-      "matchTree",
-      newChecked,
-      [fileKey, ...matchKeys],
-    );
+    panel.widgetPanel?.setCheckedKeys("matchTree", newChecked, [
+      fileKey,
+      ...matchKeys,
+    ]);
   }
 }
 
@@ -2715,14 +2913,14 @@ editor.registerCommand(
   "%cmd.search_replace",
   "%cmd.search_replace_desc",
   "start_search_replace",
-  null
+  null,
 );
 
 editor.registerCommand(
   "%cmd.search_replace_in_buffer",
   "%cmd.search_replace_in_buffer_desc",
   "start_search_replace_in_buffer",
-  null
+  null,
 );
 
 // Match navigation (issue #2434). Always visible — these operate on the
@@ -2733,14 +2931,14 @@ editor.registerCommand(
   "%cmd.next_match",
   "%cmd.next_match_desc",
   "search_replace_next_match",
-  null
+  null,
 );
 
 editor.registerCommand(
   "%cmd.prev_match",
   "%cmd.prev_match_desc",
   "search_replace_prev_match",
-  null
+  null,
 );
 
 editor.debug("Search & Replace plugin loaded");
