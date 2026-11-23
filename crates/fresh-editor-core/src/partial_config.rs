@@ -490,6 +490,7 @@ impl PartialSidebarConfig {
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct PartialTerminalConfig {
+    pub keep_editor_focus_on_send: Option<bool>,
     pub jump_to_end_on_output: Option<bool>,
     pub shell: Option<crate::config::TerminalShellConfig>,
     pub skip_app_execution_alias: Option<bool>,
@@ -500,6 +501,8 @@ pub struct PartialTerminalConfig {
 
 impl Merge for PartialTerminalConfig {
     fn merge_from(&mut self, other: &Self) {
+        self.keep_editor_focus_on_send
+            .merge_from(&other.keep_editor_focus_on_send);
         self.jump_to_end_on_output
             .merge_from(&other.jump_to_end_on_output);
         self.shell.merge_from(&other.shell);
@@ -1033,6 +1036,7 @@ impl PartialClipboardConfig {
 impl From<&TerminalConfig> for PartialTerminalConfig {
     fn from(cfg: &TerminalConfig) -> Self {
         Self {
+            keep_editor_focus_on_send: Some(cfg.keep_editor_focus_on_send),
             jump_to_end_on_output: Some(cfg.jump_to_end_on_output),
             shell: cfg.shell.clone(),
             skip_app_execution_alias: Some(cfg.skip_app_execution_alias),
@@ -1046,6 +1050,9 @@ impl From<&TerminalConfig> for PartialTerminalConfig {
 impl PartialTerminalConfig {
     pub fn resolve(self, defaults: &TerminalConfig) -> TerminalConfig {
         TerminalConfig {
+            keep_editor_focus_on_send: self
+                .keep_editor_focus_on_send
+                .unwrap_or(defaults.keep_editor_focus_on_send),
             jump_to_end_on_output: self
                 .jump_to_end_on_output
                 .unwrap_or(defaults.jump_to_end_on_output),

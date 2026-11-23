@@ -4457,6 +4457,32 @@ fn test_send_selection_to_terminal_sends_current_line_when_no_selection() {
     assert!(harness.editor().is_terminal_mode());
 }
 
+#[test]
+#[cfg(not(windows))]
+fn test_send_selection_to_terminal_keeps_editor_focus_when_enabled() {
+    use fresh::test_api::Action;
+
+    let mut harness = harness_or_return!(120, 30);
+    let config = harness.editor_mut().config_mut();
+    config.terminal.keep_editor_focus_on_send = true;
+    harness
+        .load_buffer_from_text("echo FIRST_$((6*7))\necho SECOND_$((5*5))\n")
+        .unwrap();
+    let editor_buffer = harness.editor().active_buffer_id();
+    setup_text_buffer_beside_terminal(&mut harness);
+
+    harness.api_mut().dispatch(Action::SendSelectionToTerminal);
+    harness.send_key(KeyCode::Down, KeyModifiers::NONE).unwrap();
+    harness.api_mut().dispatch(Action::SendSelectionToTerminal);
+    harness
+        .wait_until(|h| h.screen_to_string().contains("SECOND_25"))
+        .unwrap();
+
+    harness.assert_screen_contains("FIRST_42");
+    assert_eq!(harness.editor().active_buffer_id(), editor_buffer);
+    assert!(!harness.editor().is_terminal_mode());
+}
+
 /// Without any open terminal the command reports it in the status bar
 /// instead of failing silently.
 ///

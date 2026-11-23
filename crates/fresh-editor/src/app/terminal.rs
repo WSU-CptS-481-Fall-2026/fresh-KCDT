@@ -1782,9 +1782,7 @@ impl Editor {
     /// Send the current selection (or the cursor's line when nothing is
     /// selected) to the most recently focused terminal, terminated with
     /// a newline so shells/REPLs execute it — the "Run Selected Text In
-    /// Active Terminal" workflow from VS Code (issue #1871). The
-    /// terminal is then focused (jumping to its split or bringing its
-    /// tab forward) in terminal mode, so the user lands at the prompt.
+    /// Active Terminal" workflow from VS Code (issue #1871).
     pub fn send_selection_to_terminal(&mut self) {
         // Only meaningful from an editor buffer; a terminal buffer has
         // no text selection to send.
@@ -1811,9 +1809,9 @@ impl Editor {
 
         if let Some(handle) = self.active_window().terminal_manager.get(terminal_id) {
             handle.write(normalized.as_bytes());
-            self.focus_terminal_buffer(terminal_id);
-            // After `enter_terminal_mode`'s generic message — the send
-            // destination is the more useful thing to surface.
+            if !self.config.terminal.keep_editor_focus_on_send {
+                self.focus_terminal_buffer(terminal_id);
+            }
             self.set_status_message(t!("terminal.sent_selection", id = terminal_id.0).to_string());
         }
     }

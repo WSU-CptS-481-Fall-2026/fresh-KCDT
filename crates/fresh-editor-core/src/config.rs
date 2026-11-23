@@ -2501,6 +2501,10 @@ impl Default for ClipboardConfig {
 /// Terminal configuration
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TerminalConfig {
+    #[serde(default)]
+    #[schemars(title = "Keep Editor Focus on Send")]
+    pub keep_editor_focus_on_send: bool,
+
     /// When viewing terminal scrollback and new output arrives,
     /// automatically jump back to terminal mode (default: true)
     #[serde(default = "default_true")]
@@ -2583,6 +2587,7 @@ pub enum TerminalMouseForwarding {
 impl Default for TerminalConfig {
     fn default() -> Self {
         Self {
+            keep_editor_focus_on_send: false,
             jump_to_end_on_output: true,
             shell: None,
             skip_app_execution_alias: true,

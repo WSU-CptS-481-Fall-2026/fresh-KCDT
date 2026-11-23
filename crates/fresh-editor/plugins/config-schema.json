@@ -198,6 +198,7 @@
       "description": "Terminal settings",
       "$ref": "#/$defs/TerminalConfig",
       "default": {
+        "keep_editor_focus_on_send": false,
         "jump_to_end_on_output": true,
         "shell": null,
         "skip_app_execution_alias": true,
@@ -1319,6 +1320,11 @@
       "description": "Terminal configuration",
       "type": "object",
       "properties": {
+        "keep_editor_focus_on_send": {
+          "title": "Keep Editor Focus on Send",
+          "type": "boolean",
+          "default": false
+        },
         "jump_to_end_on_output": {
           "description": "When viewing terminal scrollback and new output arrives,\nautomatically jump back to terminal mode (default: true)",
           "type": "boolean",
