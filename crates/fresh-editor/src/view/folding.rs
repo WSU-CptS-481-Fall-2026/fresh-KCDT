@@ -644,6 +644,62 @@ pub mod indent_folding {
         next_indent > header_indent
     }
 
+    pub struct FoldBlock {
+        pub header_start: usize,
+        pub body_start: usize,
+        pub body_end: usize,
+    }
+
+    pub fn outer_ranges(buffer: &mut Buffer, tab_size: usize) -> Vec<FoldBlock> {
+        struct Line {
+            indent: usize,
+            start: usize,
+            end: usize,
+        }
+
+        let mut blocks = Vec::new();
+        let mut open_header: Option<Line> = None;
+        let mut previous_line: Option<Line> = None;
+        let mut lines = buffer.line_iterator(0, 80);
+        while let Some((start, text)) = lines.next_logical_line() {
+            let (indent, blank) = slice_indent(text.as_bytes(), tab_size);
+            if blank {
+                continue;
+            }
+
+            if let Some(previous) = previous_line {
+                if let Some(header) = &open_header {
+                    if indent <= header.indent {
+                        blocks.push(FoldBlock {
+                            header_start: header.start,
+                            body_start: header.end,
+                            body_end: previous.end,
+                        });
+                        open_header = None;
+                    }
+                }
+                if open_header.is_none() && indent > previous.indent {
+                    open_header = Some(previous);
+                }
+            }
+
+            previous_line = Some(Line {
+                indent,
+                start,
+                end: lines.current_position(),
+            });
+        }
+
+        if let (Some(header), Some(last_line)) = (open_header, previous_line) {
+            blocks.push(FoldBlock {
+                header_start: header.start,
+                body_start: header.end,
+                body_end: last_line.end,
+            });
+        }
+        blocks
+    }
+
     /// Byte-based fold-end search for a single header line.
     ///
     /// Reads up to `max_scan_bytes` forward from `header_byte` and determines

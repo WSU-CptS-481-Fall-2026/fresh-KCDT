@@ -673,6 +673,66 @@ impl crate::app::window::Window {
         self.toggle_fold_at_byte(buffer_id, pos);
     }
 
+    pub fn unfold_all(&mut self) {
+        let (split_id, buffer_id) = self.effective_active_pair();
+        self.buffers
+            .with_buffer_and_split(buffer_id, split_id, |state, view| {
+                view.ensure_buffer_state(buffer_id)
+                    .folds
+                    .clear(&mut state.marker_list);
+            });
+    }
+
+    pub fn fold_top_level(&mut self) {
+        let state = self.active_state();
+        if state.folding_ranges.is_empty() && state.buffer.is_large_file() {
+            self.status_message = Some("Large file: use Toggle Fold for individual blocks".to_string());
+            return;
+        }
+        self.unfold_all();
+        let (split_id, buffer_id) = self.effective_active_pair();
+        self.buffers
+            .with_buffer_and_split(buffer_id, split_id, |state, view| {
+                let view = view.ensure_buffer_state(buffer_id);
+                if state.folding_ranges.is_empty() {
+                    let tab_size = state.buffer_settings.tab_size;
+                    let blocks = crate::view::folding::indent_folding::outer_ranges(
+                        &mut state.buffer,
+                        tab_size,
+                    );
+                    for block in blocks {
+                        create_fold(
+                            state,
+                            view,
+                            block.body_start,
+                            block.body_end,
+                            block.header_start,
+                            None,
+                        );
+                    }
+                } else {
+                    let mut ranges = state
+                        .folding_ranges
+                        .resolved(&state.buffer, &state.marker_list);
+                    ranges.sort_unstable_by(|first, second| {
+                        if first.start_line == second.start_line {
+                            second.end_line.cmp(&first.end_line)
+                        } else {
+                            first.start_line.cmp(&second.start_line)
+                        }
+                    });
+                    let mut next_header = 0;
+                    for range in &ranges {
+                        if range.start_line >= range.end_line || range.start_line < next_header {
+                            continue;
+                        }
+                        create_lsp_fold(state, view, range);
+                        next_header = range.end_line.saturating_add(1);
+                    }
+                }
+            });
+    }
+
     /// Toggle folding for the given line in the specified buffer.
     ///
     /// Kept for callers that only have a line number (e.g. gutter clicks
@@ -762,26 +822,7 @@ impl crate::app::window::Window {
                     let Some(range) = chosen else {
                         return;
                     };
-                    let placeholder = range
-                        .collapsed_text
-                        .as_ref()
-                        .filter(|text| !text.trim().is_empty())
-                        .cloned();
-                    let header_line = range.start_line as usize;
-                    let end_line = range.end_line as usize;
-                    let first_hidden = header_line.saturating_add(1);
-                    if first_hidden > end_line {
-                        return;
-                    }
-                    let Some(sb) = state.buffer.line_start_offset(first_hidden) else {
-                        return;
-                    };
-                    let eb = state
-                        .buffer
-                        .line_start_offset(end_line.saturating_add(1))
-                        .unwrap_or_else(|| state.buffer.len());
-                    let hb = state.buffer.line_start_offset(header_line).unwrap_or(0);
-                    create_fold(state, buf_state, sb, eb, hb, placeholder);
+                    create_lsp_fold(state, buf_state, range);
                 } else {
                     // --- Indent-based folding on bytes ---
                     use crate::view::folding::indent_folding;
@@ -813,6 +854,28 @@ impl crate::app::window::Window {
                 }
             });
     }
+}
+
+fn create_lsp_fold(
+    state: &mut crate::state::EditorState,
+    view: &mut crate::view::split::BufferViewState,
+    range: &lsp_types::FoldingRange,
+) {
+    let header = range.start_line as usize;
+    let Some(start) = state.buffer.line_start_offset(header + 1) else {
+        return;
+    };
+    let end = state
+        .buffer
+        .line_start_offset(range.end_line as usize + 1)
+        .unwrap_or(state.buffer.len());
+    let header_byte = state.buffer.line_start_offset(header).unwrap_or(0);
+    let label = range
+        .collapsed_text
+        .as_ref()
+        .filter(|s| !s.trim().is_empty())
+        .cloned();
+    create_fold(state, view, start, end, header_byte, label);
 }
 
 /// Plant a fold over the byte range, moving cursors out of the

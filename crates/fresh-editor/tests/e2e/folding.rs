@@ -103,6 +103,60 @@ fn find_text_position(harness: &EditorTestHarness, needle: &str) -> (u16, u16) {
 }
 
 #[test]
+fn fold_top_level_and_unfold_all_from_palette() {
+    let mut harness = EditorTestHarness::new(80, 24).unwrap();
+    let file = TestFixture::new("blocks.txt", "first\n    nested\n        leaf\nsecond\n    body")
+        .unwrap();
+    harness.open_file(&file.path).unwrap();
+
+    set_cursor_line(&mut harness, 1);
+    harness.run_palette_command("Toggle Fold").unwrap();
+    set_cursor_line(&mut harness, 0);
+
+    for _ in 0..2 {
+        harness.run_palette_command("Fold Top-Level Blocks").unwrap();
+        harness.render().unwrap();
+        harness.assert_screen_not_contains("nested");
+        harness.assert_screen_not_contains("body");
+    }
+
+    harness.run_palette_command("Toggle Fold").unwrap();
+    harness.render().unwrap();
+    harness.assert_screen_contains("leaf");
+
+    harness.run_palette_command("Unfold All").unwrap();
+    harness.render().unwrap();
+    harness.assert_screen_contains("body");
+}
+
+#[test]
+fn fold_top_level_skips_large_files_without_server_ranges() {
+    let mut config = fresh::config::Config::default();
+    config.editor.large_file_threshold_bytes = 3;
+    let mut harness = EditorTestHarness::with_config(100, 24, config).unwrap();
+    let file = TestFixture::new("large.txt", "header\n    visible_body\n").unwrap();
+    harness.open_file(&file.path).unwrap();
+
+    harness.run_palette_command("Fold Top-Level Blocks").unwrap();
+    harness.render().unwrap();
+    harness.assert_screen_contains("Large file: use Toggle Fold");
+    harness.assert_screen_contains("visible_body");
+}
+
+#[test]
+fn fold_top_level_prefers_the_larger_server_range() {
+    let mut harness = EditorTestHarness::new(80, 24).unwrap();
+    let file = TestFixture::new("ranges.txt", "header\nfirst_body\nsecond_body\nend\n").unwrap();
+    harness.open_file(&file.path).unwrap();
+    set_fold_ranges(&mut harness, &[(0, 1), (0, 2)]);
+
+    harness.run_palette_command("Fold Top-Level Blocks").unwrap();
+    harness.render().unwrap();
+    harness.assert_screen_contains("end");
+    harness.assert_screen_not_contains("second_body");
+}
+
+#[test]
 fn test_fold_gutter_double_click_toggles_like_single() {
     let mut harness = EditorTestHarness::new(80, 24).unwrap();
 

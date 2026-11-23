@@ -1383,6 +1383,8 @@ impl Editor {
             Action::ToggleComment => {
                 self.toggle_comment();
             }
+            Action::FoldTopLevel => self.active_window_mut().fold_top_level(),
+            Action::UnfoldAll => self.active_window_mut().unfold_all(),
             Action::ToggleFold => {
                 self.active_window_mut().toggle_fold_at_cursor();
             }

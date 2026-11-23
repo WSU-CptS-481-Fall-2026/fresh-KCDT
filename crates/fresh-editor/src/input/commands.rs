@@ -757,6 +757,20 @@ static COMMAND_DEFS: &[CommandDef] = &[
         custom_contexts: &[],
     },
     CommandDef {
+        name_key: "Fold Top-Level Blocks",
+        desc_key: "Collapse the outermost blocks in the current buffer",
+        action: || Action::FoldTopLevel,
+        contexts: &[Normal],
+        custom_contexts: &[],
+    },
+    CommandDef {
+        name_key: "Unfold All",
+        desc_key: "Expand all blocks in the current buffer",
+        action: || Action::UnfoldAll,
+        contexts: &[Normal],
+        custom_contexts: &[],
+    },
+    CommandDef {
         name_key: "cmd.toggle_fold",
         desc_key: "cmd.toggle_fold_desc",
         action: || Action::ToggleFold,

@@ -497,6 +497,8 @@ pub enum Action {
     ToggleComment,
     DabbrevExpand,
     ToggleFold,
+    FoldTopLevel,
+    UnfoldAll,
 
     // Bookmarks
     SetBookmark(char),
@@ -1078,6 +1080,8 @@ impl Action {
             "toggle_comment" => ToggleComment,
             "dabbrev_expand" => DabbrevExpand,
             "toggle_fold" => ToggleFold,
+            "fold_top_level" => FoldTopLevel,
+            "unfold_all" => UnfoldAll,
 
             "list_bookmarks" => ListBookmarks,
 
@@ -2998,6 +3002,8 @@ impl KeybindingResolver {
             Action::ToggleComment => t!("action.toggle_comment"),
             Action::DabbrevExpand => std::borrow::Cow::Borrowed("Expand abbreviation (dabbrev)"),
             Action::ToggleFold => t!("action.toggle_fold"),
+            Action::FoldTopLevel => "Fold Top-Level Blocks".into(),
+            Action::UnfoldAll => "Unfold All".into(),
             Action::SetBookmark(c) => t!("action.set_bookmark", key = c),
             Action::JumpToBookmark(c) => t!("action.jump_to_bookmark", key = c),
             Action::ClearBookmark(c) => t!("action.clear_bookmark", key = c),

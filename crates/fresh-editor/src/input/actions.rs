@@ -3688,6 +3688,8 @@ pub fn action_to_events(
         | Action::ToggleComment
         | Action::DabbrevExpand
         | Action::ToggleFold
+        | Action::FoldTopLevel
+        | Action::UnfoldAll
         | Action::SetBookmark(_)
         | Action::JumpToBookmark(_)
         | Action::ClearBookmark(_)
