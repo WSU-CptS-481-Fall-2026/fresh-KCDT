@@ -2215,6 +2215,10 @@ pub struct FileExplorerConfig {
     #[serde(default = "default_true")]
     pub compact_directories: bool,
 
+    /// Indent per level.
+    #[serde(default = "default_explorer_indent")]
+    pub indent: u8,
+
     /// Symbol shown next to a collapsed (closed) directory in the file
     /// explorer tree. A short string (single character recommended).
     /// A trailing space is added automatically during rendering; the
@@ -2388,6 +2392,10 @@ fn default_explorer_width() -> ExplorerWidth {
 
 fn default_explorer_side() -> FileExplorerSide {
     FileExplorerSide::default()
+}
+
+fn default_explorer_indent() -> u8 {
+    2
 }
 
 fn default_tree_indicator_collapsed() -> String {
@@ -2658,6 +2666,7 @@ impl Default for FileExplorerConfig {
             side: default_explorer_side(),
             auto_open_on_last_buffer_close: true,
             compact_directories: true,
+            indent: default_explorer_indent(),
             tree_indicator_collapsed: default_tree_indicator_collapsed(),
             tree_indicator_expanded: default_tree_indicator_expanded(),
         }

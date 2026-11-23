@@ -3477,13 +3477,13 @@ impl Editor {
             .iter()
             .enumerate()
             .filter_map(|(row, &actual)| {
-                let &(node_id, indent) = display.get(actual)?;
+                let &(node_id, depth) = display.get(actual)?;
                 let matched = search.then(|| view.get_match_for_node(node_id)).flatten();
                 crate::view::ui::file_explorer::describe_row(
                     crate::view::ui::file_explorer::RowDesc {
                         view,
                         node_id,
-                        indent,
+                        indent_columns: depth * usize::from(self.config.file_explorer.indent),
                         row,
                         is_cursor: selected == Some(actual),
                         is_multi: multi.contains(&node_id),

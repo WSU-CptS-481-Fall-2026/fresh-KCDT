@@ -168,6 +168,7 @@
         "side": "left",
         "auto_open_on_last_buffer_close": true,
         "compact_directories": true,
+        "indent": 2,
         "tree_indicator_collapsed": ">",
         "tree_indicator_expanded": "▼"
       }
@@ -1236,6 +1237,14 @@
           "description": "Render single-child directory chains on a single line, e.g.\n`src/main/java/com/example`. Only applies when each intermediate\ndirectory in the chain is expanded and has exactly one visible\nchild that is itself a directory. Mirrors VSCode's\n`explorer.compactFolders`.\nDefault: true",
           "type": "boolean",
           "default": true
+        },
+        "indent": {
+          "description": "Indent per level.",
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 2
         },
         "tree_indicator_collapsed": {
           "description": "Symbol shown next to a collapsed (closed) directory in the file\nexplorer tree. A short string (single character recommended).\nA trailing space is added automatically during rendering; the\nrenderer pads narrower indicators so collapsed/expanded rows align.\nDefault: \">\"",

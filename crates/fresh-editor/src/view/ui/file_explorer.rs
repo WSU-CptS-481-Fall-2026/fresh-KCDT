@@ -33,7 +33,7 @@ impl FileExplorerRenderer {
 pub struct RowDesc<'a> {
     pub view: &'a FileTreeView,
     pub node_id: NodeId,
-    pub indent: usize,
+    pub indent_columns: usize,
     /// The row's index *in the viewport* — its key, and what hit-testing
     /// answers with.
     pub row: usize,
@@ -122,8 +122,8 @@ pub fn describe_row(d: RowDesc<'_>) -> Option<crate::view::shell::file_explorer:
     };
 
     let mut left: fe::Runs = Vec::new();
-    if d.indent > 0 {
-        left.push((" ".repeat(d.indent * 2), pair(neutral, ground)));
+    if d.indent_columns > 0 {
+        left.push((" ".repeat(d.indent_columns), pair(neutral, ground)));
     }
 
     // The indicator column is sized from the configured glyphs so names stay
@@ -258,7 +258,7 @@ mod tests {
     fn build_line(
         view: &FileTreeView,
         node_id: NodeId,
-        indent: usize,
+        indent_columns: usize,
         decorations: &FileExplorerDecorationCache,
         slot_overrides: &FileExplorerSlotOverrideCache,
         theme: &Theme,
@@ -267,7 +267,7 @@ mod tests {
         let row = describe_row(RowDesc {
             view,
             node_id,
-            indent,
+            indent_columns,
             row: 0,
             is_cursor: false,
             is_multi: false,

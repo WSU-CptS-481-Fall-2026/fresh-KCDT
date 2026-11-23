@@ -4226,6 +4226,32 @@ pub(crate) fn explorer_row_highlighted(harness: &EditorTestHarness, name: &str) 
         .any(|row| row.contains(name))
 }
 
+#[test]
+fn test_file_explorer_indent_per_level() {
+    for (settings, indent) in [(r#"{}"#, 2), (r#"{"indent":1}"#, 1), (r#"{"indent":0}"#, 0)] {
+        let mut config = Config::default();
+        config.file_explorer = serde_json::from_str(settings).unwrap();
+        config.file_explorer.compact_directories = false;
+        let mut harness =
+            EditorTestHarness::with_temp_project_and_config_no_plugins(120, 40, config).unwrap();
+        let folder = harness.project_dir().unwrap().join("parent_dir/child_dir");
+        fs::create_dir_all(&folder).unwrap();
+        let file = folder.join("sample.txt");
+        fs::write(&file, "").unwrap();
+        harness.open_file(&file).unwrap();
+        harness.editor_mut().focus_file_explorer();
+        harness.wait_for_file_explorer_item("child_dir").unwrap();
+
+        let screen = harness.screen_to_string();
+        let name_column = |name| {
+            let row = screen.lines().find(|row| row.contains(name)).unwrap();
+            let (padding, _) = row.split_once(name).unwrap();
+            padding.chars().count()
+        };
+        assert_eq!(name_column("child_dir"), name_column("parent_dir") + indent);
+    }
+}
+
 /// Custom tree indicators (issue #1940) — the collapsed/expanded glyphs
 /// rendered next to directories must come from
 /// `file_explorer.tree_indicator_collapsed/expanded` config, falling back

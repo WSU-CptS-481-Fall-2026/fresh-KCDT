@@ -404,6 +404,7 @@ pub struct PartialFileExplorerConfig {
     pub side: Option<crate::config::FileExplorerSide>,
     pub auto_open_on_last_buffer_close: Option<bool>,
     pub compact_directories: Option<bool>,
+    pub indent: Option<u8>,
     pub tree_indicator_collapsed: Option<String>,
     pub tree_indicator_expanded: Option<String>,
 }
@@ -422,6 +423,7 @@ impl Merge for PartialFileExplorerConfig {
             .merge_from(&other.auto_open_on_last_buffer_close);
         self.compact_directories
             .merge_from(&other.compact_directories);
+        self.indent.merge_from(&other.indent);
         self.tree_indicator_collapsed
             .merge_from(&other.tree_indicator_collapsed);
         self.tree_indicator_expanded
@@ -960,6 +962,7 @@ impl From<&FileExplorerConfig> for PartialFileExplorerConfig {
             side: Some(cfg.side),
             auto_open_on_last_buffer_close: Some(cfg.auto_open_on_last_buffer_close),
             compact_directories: Some(cfg.compact_directories),
+            indent: Some(cfg.indent),
             tree_indicator_collapsed: Some(cfg.tree_indicator_collapsed.clone()),
             tree_indicator_expanded: Some(cfg.tree_indicator_expanded.clone()),
         }
@@ -984,6 +987,7 @@ impl PartialFileExplorerConfig {
             compact_directories: self
                 .compact_directories
                 .unwrap_or(defaults.compact_directories),
+            indent: self.indent.unwrap_or(defaults.indent),
             tree_indicator_collapsed: self
                 .tree_indicator_collapsed
                 .unwrap_or_else(|| defaults.tree_indicator_collapsed.clone()),
