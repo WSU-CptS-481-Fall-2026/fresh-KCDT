@@ -219,8 +219,15 @@ const states: Map<number, BufferDiffState> = new Map();
 // =============================================================================
 
 function getDefaultMode(): DiffMode {
-  const stored = editor.getGlobalState("live_diff.default_mode") as DiffMode | null;
-  if (stored && (stored.kind === "head" || stored.kind === "disk" || stored.kind === "branch")) {
+  const stored = editor.getGlobalState(
+    "live_diff.default_mode",
+  ) as DiffMode | null;
+  if (
+    stored &&
+    (stored.kind === "head" ||
+      stored.kind === "disk" ||
+      stored.kind === "branch")
+  ) {
     return stored;
   }
   return { kind: "head" };
@@ -231,8 +238,16 @@ function setDefaultMode(mode: DiffMode): void {
 }
 
 function getStoredMode(bufferId: number): DiffMode | null {
-  const stored = editor.getViewState(bufferId, "live_diff.mode") as DiffMode | null;
-  if (stored && (stored.kind === "head" || stored.kind === "disk" || stored.kind === "branch")) {
+  const stored = editor.getViewState(
+    bufferId,
+    "live_diff.mode",
+  ) as DiffMode | null;
+  if (
+    stored &&
+    (stored.kind === "head" ||
+      stored.kind === "disk" ||
+      stored.kind === "branch")
+  ) {
     return stored;
   }
   return null;
@@ -278,7 +293,10 @@ function fileDir(filePath: string): string {
 }
 
 /** Baseline registration parameters for a diff mode. */
-function baselineParams(mode: DiffMode): { kind: string; gitRef: string | null } {
+function baselineParams(mode: DiffMode): {
+  kind: string;
+  gitRef: string | null;
+} {
   switch (mode.kind) {
     case "head":
       return { kind: "gitRef", gitRef: "HEAD" };
@@ -321,15 +339,20 @@ function releaseBaseline(state: BufferDiffState): void {
 async function resolveDefaultBranch(filePath: string): Promise<string> {
   const cwd = fileDir(filePath);
   const head = await editor.spawnProcess(
-    "git", ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], cwd,
+    "git",
+    ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
+    cwd,
   );
   if (head.exit_code === 0) {
     const trimmed = head.stdout.trim();
-    if (trimmed.startsWith("origin/")) return trimmed.substring("origin/".length);
+    if (trimmed.startsWith("origin/"))
+      return trimmed.substring("origin/".length);
     if (trimmed.length > 0) return trimmed;
   }
   const main = await editor.spawnProcess(
-    "git", ["rev-parse", "--verify", "main"], cwd,
+    "git",
+    ["rev-parse", "--verify", "main"],
+    cwd,
   );
   if (main.exit_code === 0) return "main";
   return "master";
@@ -584,10 +607,7 @@ function computeWordDiff(oldS: string, newS: string): WordDiff {
       j--;
     }
   }
-  const unmatchedOf = (
-    tokens: Token[],
-    matched: boolean[],
-  ): WordRange[] => {
+  const unmatchedOf = (tokens: Token[], matched: boolean[]): WordRange[] => {
     const out: Token[] = [];
     for (let k = 0; k < tokens.length; k++) {
       if (matched[k]) continue;
@@ -616,6 +636,21 @@ function collapseRanges(tokens: Token[]): WordRange[] {
     }
   }
   return ranges;
+}
+
+// Helper Removed Hunk constructor for the refineHunks function.
+function createRemovedHunk(
+  newStart: number,
+  oldLine: string,
+  oldRanges: WordRange[],
+): Hunk {
+  return {
+    kind: "removed",
+    newStart,
+    newCount: 0,
+    oldLines: [oldLine],
+    ...(oldRanges.length > 0 ? { oldWordRanges: [oldRanges] } : {}),
+  };
 }
 
 /**
@@ -675,13 +710,7 @@ function refineHunks(hunks: Hunk[], newLines: string[]): Hunk[] {
         // it carrying old-side word ranges so the user can see which
         // words were removed/replaced.
         if (wd.oldRanges.length > 0) {
-          out.push({
-            kind: "removed",
-            newStart: h.newStart + i,
-            newCount: 0,
-            oldLines: [oldLine],
-            oldWordRanges: [wd.oldRanges],
-          });
+          out.push(createRemovedHunk(h.newStart + i, oldLine, wd.oldRanges));
         }
         out.push({
           kind: "modified",
@@ -697,15 +726,7 @@ function refineHunks(hunks: Hunk[], newLines: string[]): Hunk[] {
         // removed/added — tokens common to both lines stay unmarked
         // (issue #1949).
         const wd = computeWordDiff(oldLine, newLine);
-        out.push({
-          kind: "removed",
-          newStart: h.newStart + i,
-          newCount: 0,
-          oldLines: [oldLine],
-          ...(wd.oldRanges.length > 0
-            ? { oldWordRanges: [wd.oldRanges] }
-            : {}),
-        });
+        out.push(createRemovedHunk(h.newStart + i, oldLine, wd.oldRanges));
         out.push({
           kind: "added",
           newStart: h.newStart + i,
@@ -758,7 +779,11 @@ function computeLineByteStarts(lines: string[]): number[] {
   return starts;
 }
 
-function renderHunks(state: BufferDiffState, newLines: string[], detail: DetailLevel): void {
+function renderHunks(
+  state: BufferDiffState,
+  newLines: string[],
+  detail: DetailLevel,
+): void {
   const bid = state.bufferId;
   clearDecorations(bid);
 
@@ -793,14 +818,26 @@ function renderHunks(state: BufferDiffState, newLines: string[], detail: DetailL
 
   if (addedLines.length > 0) {
     editor.setLineIndicators(
-      bid, addedLines, NS_GUTTER, SYMBOLS.added,
-      GUTTER_COLORS.added[0], GUTTER_COLORS.added[1], GUTTER_COLORS.added[2], PRIORITY,
+      bid,
+      addedLines,
+      NS_GUTTER,
+      SYMBOLS.added,
+      GUTTER_COLORS.added[0],
+      GUTTER_COLORS.added[1],
+      GUTTER_COLORS.added[2],
+      PRIORITY,
     );
   }
   if (modifiedLines.length > 0) {
     editor.setLineIndicators(
-      bid, modifiedLines, NS_GUTTER, SYMBOLS.modified,
-      GUTTER_COLORS.modified[0], GUTTER_COLORS.modified[1], GUTTER_COLORS.modified[2], PRIORITY,
+      bid,
+      modifiedLines,
+      NS_GUTTER,
+      SYMBOLS.modified,
+      GUTTER_COLORS.modified[0],
+      GUTTER_COLORS.modified[1],
+      GUTTER_COLORS.modified[2],
+      PRIORITY,
     );
   }
 
@@ -821,15 +858,21 @@ function renderHunks(state: BufferDiffState, newLines: string[], detail: DetailL
   const scrollMarkers = [];
   for (const h of state.hunks) {
     if (h.newStart >= lineCount) continue;
-    const color = h.kind === "added"
-      ? GUTTER_COLORS.added
-      : h.kind === "modified"
-        ? GUTTER_COLORS.modified
-        : GUTTER_COLORS.removed;
+    const color =
+      h.kind === "added"
+        ? GUTTER_COLORS.added
+        : h.kind === "modified"
+          ? GUTTER_COLORS.modified
+          : GUTTER_COLORS.removed;
     const start = lineStarts[h.newStart];
     // Byte offsets, not line numbers: exact at any file size, and the editor
     // anchors them so marks ride subsequent edits until the next recompute.
-    const marker: { position: number; end?: number; color: [number, number, number]; priority: number } = {
+    const marker: {
+      position: number;
+      end?: number;
+      color: [number, number, number];
+      priority: number;
+    } = {
       position: start,
       color,
       priority: PRIORITY,
@@ -1243,7 +1286,9 @@ function live_diff_toggle_buffer(): void {
   state.override = newEnabled;
   storeOverride(bid, newEnabled);
   syncBufferToEnabledState(state);
-  editor.setStatus(editor.t(newEnabled ? "status.buffer_enabled" : "status.buffer_disabled"));
+  editor.setStatus(
+    editor.t(newEnabled ? "status.buffer_enabled" : "status.buffer_disabled"),
+  );
 }
 registerHandler("live_diff_toggle_buffer", live_diff_toggle_buffer);
 
@@ -1259,7 +1304,9 @@ function live_diff_toggle_global(): void {
       syncBufferToEnabledState(state);
     }
   }
-  editor.setStatus(editor.t(newEnabled ? "status.global_enabled" : "status.global_disabled"));
+  editor.setStatus(
+    editor.t(newEnabled ? "status.global_enabled" : "status.global_disabled"),
+  );
 }
 registerHandler("live_diff_toggle_global", live_diff_toggle_global);
 
@@ -1276,7 +1323,8 @@ async function live_diff_vs_disk(): Promise<void> {
 registerHandler("live_diff_vs_disk", live_diff_vs_disk);
 
 async function live_diff_vs_branch(): Promise<void> {
-  const last = (editor.getGlobalState("live_diff.last_branch") as string | null) ?? "main";
+  const last =
+    (editor.getGlobalState("live_diff.last_branch") as string | null) ?? "main";
   const ref = await editor.prompt(editor.t("prompt.branch"), last);
   if (!ref || ref.trim().length === 0) return;
   const trimmed = ref.trim();
@@ -1318,7 +1366,8 @@ async function live_diff_set_default(): Promise<void> {
   const c = choice.trim().toLowerCase();
   if (c === "head") setDefaultMode({ kind: "head" });
   else if (c === "disk") setDefaultMode({ kind: "disk" });
-  else if (c.startsWith("branch:")) setDefaultMode({ kind: "branch", ref: c.substring("branch:".length) });
+  else if (c.startsWith("branch:"))
+    setDefaultMode({ kind: "branch", ref: c.substring("branch:".length) });
   else {
     editor.setStatus(editor.t("status.bad_default"));
     return;
@@ -1369,7 +1418,9 @@ async function discoverHeadLogPath(cwd: string): Promise<string | null> {
   // file watcher compares against notify's canonical, `..`-free event paths —
   // a `..` in the watch path means the reflog event never matches (#2503).
   const result = await editor.spawnProcess(
-    "git", ["rev-parse", "--absolute-git-dir"], cwd,
+    "git",
+    ["rev-parse", "--absolute-git-dir"],
+    cwd,
   );
   if (result.exit_code !== 0) return null;
   const gitDir = result.stdout.trim();
@@ -1466,13 +1517,17 @@ editor.on("buffer_activated", (args) => {
 
 editor.on("after_insert", (args) => {
   if (!states.has(args.buffer_id)) return true;
-  scheduleRecompute(args.buffer_id).catch((e) => editor.error(`live-diff: ${e}`));
+  scheduleRecompute(args.buffer_id).catch((e) =>
+    editor.error(`live-diff: ${e}`),
+  );
   return true;
 });
 
 editor.on("after_delete", (args) => {
   if (!states.has(args.buffer_id)) return true;
-  scheduleRecompute(args.buffer_id).catch((e) => editor.error(`live-diff: ${e}`));
+  scheduleRecompute(args.buffer_id).catch((e) =>
+    editor.error(`live-diff: ${e}`),
+  );
   return true;
 });
 
@@ -1482,7 +1537,9 @@ editor.on("after_delete", (args) => {
 // view update when a coding agent rewrites the file on disk.
 editor.on("lines_changed", (args) => {
   if (!states.has(args.buffer_id)) return true;
-  scheduleRecompute(args.buffer_id).catch((e) => editor.error(`live-diff: ${e}`));
+  scheduleRecompute(args.buffer_id).catch((e) =>
+    editor.error(`live-diff: ${e}`),
+  );
   return true;
 });
 
@@ -1527,14 +1584,54 @@ editor.on("buffer_closed", (args) => {
 // Command registration
 // =============================================================================
 
-editor.registerCommand("%cmd.toggle_global", "%cmd.toggle_global_desc", "live_diff_toggle_global", null);
-editor.registerCommand("%cmd.toggle_buffer", "%cmd.toggle_buffer_desc", "live_diff_toggle_buffer", null);
-editor.registerCommand("%cmd.vs_head", "%cmd.vs_head_desc", "live_diff_vs_head", null);
-editor.registerCommand("%cmd.vs_disk", "%cmd.vs_disk_desc", "live_diff_vs_disk", null);
-editor.registerCommand("%cmd.vs_branch", "%cmd.vs_branch_desc", "live_diff_vs_branch", null);
-editor.registerCommand("%cmd.vs_default_branch", "%cmd.vs_default_branch_desc", "live_diff_vs_default_branch", null);
-editor.registerCommand("%cmd.refresh", "%cmd.refresh_desc", "live_diff_refresh", null);
-editor.registerCommand("%cmd.set_default", "%cmd.set_default_desc", "live_diff_set_default", null);
+editor.registerCommand(
+  "%cmd.toggle_global",
+  "%cmd.toggle_global_desc",
+  "live_diff_toggle_global",
+  null,
+);
+editor.registerCommand(
+  "%cmd.toggle_buffer",
+  "%cmd.toggle_buffer_desc",
+  "live_diff_toggle_buffer",
+  null,
+);
+editor.registerCommand(
+  "%cmd.vs_head",
+  "%cmd.vs_head_desc",
+  "live_diff_vs_head",
+  null,
+);
+editor.registerCommand(
+  "%cmd.vs_disk",
+  "%cmd.vs_disk_desc",
+  "live_diff_vs_disk",
+  null,
+);
+editor.registerCommand(
+  "%cmd.vs_branch",
+  "%cmd.vs_branch_desc",
+  "live_diff_vs_branch",
+  null,
+);
+editor.registerCommand(
+  "%cmd.vs_default_branch",
+  "%cmd.vs_default_branch_desc",
+  "live_diff_vs_default_branch",
+  null,
+);
+editor.registerCommand(
+  "%cmd.refresh",
+  "%cmd.refresh_desc",
+  "live_diff_refresh",
+  null,
+);
+editor.registerCommand(
+  "%cmd.set_default",
+  "%cmd.set_default_desc",
+  "live_diff_set_default",
+  null,
+);
 
 // =============================================================================
 // Plugin API
